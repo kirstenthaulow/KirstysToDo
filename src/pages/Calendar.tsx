@@ -77,6 +77,31 @@ const Calendar = () => {
     fetchTasks();
   }, [user, workspaces]);
 
+  // Add real-time subscriptions for task updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('calendar-task-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchTasks(); // Refresh tasks when any task changes
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, workspaces]);
+
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();

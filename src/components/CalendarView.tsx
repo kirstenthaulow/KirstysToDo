@@ -57,6 +57,31 @@ export const CalendarView = ({ workspaces }: CalendarViewProps) => {
     fetchTaskDates();
   }, [user, workspaces]);
 
+  // Add real-time subscriptions for task updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('calendar-view-task-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchTaskDates(); // Refresh task dates when any task changes
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, workspaces]);
+
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
