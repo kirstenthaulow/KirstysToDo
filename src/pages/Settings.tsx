@@ -7,15 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Mail, Smartphone, Moon, Sun, Globe, Clock, User, Shield } from "lucide-react";
+import { Bell, Mail, Smartphone, Moon, Sun, Globe, Clock, User, Shield, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/components/theme-provider";
+import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [defaultReminder, setDefaultReminder] = useState("15");
-  const [theme, setTheme] = useState("light");
   const [timeFormat, setTimeFormat] = useState("12");
   const [weekStart, setWeekStart] = useState("monday");
 
@@ -32,9 +35,18 @@ const Settings = () => {
       <header className="border-b bg-card px-6 py-4">
         <div className="mx-auto max-w-4xl">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
-              <p className="text-sm text-muted-foreground">Customize your TaskNest experience</p>
+            <div className="flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => navigate('/')}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
+                <p className="text-sm text-muted-foreground">Customize your KirstysToDos experience</p>
+              </div>
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight, CheckCircle2, Folder, History as HistoryIcon } from "lucide-react";
+import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight, CheckCircle2, Folder, History as HistoryIcon, Settings as SettingsIcon } from "lucide-react";
 import { CalendarView } from "@/components/CalendarView";
 import { TaskList } from "@/components/TaskList";
 import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
@@ -352,6 +352,14 @@ const Dashboard = () => {
               >
                 <HistoryIcon className="h-4 w-4" />
                 <span>History</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/settings')}
+                className="flex items-center space-x-2"
+              >
+                <SettingsIcon className="h-4 w-4" />
+                <span>Settings</span>
               </Button>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">
