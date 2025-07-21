@@ -62,40 +62,37 @@ const TaskComposer = () => {
     
     setIsAiParsing(true);
     
-    // Simulate AI parsing (in real app, this would call an AI service)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock parsing results
-    if (naturalLanguageInput.toLowerCase().includes("dentist")) {
-      setTitle("Dentist Appointment");
-      setDescription("Regular checkup and cleaning");
-      setSelectedTags(["health", "appointment"]);
-      setPriority("medium");
+    try {
+      const { data, error } = await supabase.functions.invoke('parse-task-with-ai', {
+        body: { input: naturalLanguageInput }
+      });
+
+      if (error) throw error;
+
+      // Apply parsed results
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+      if (data.priority) setPriority(data.priority);
+      if (data.tags && data.tags.length > 0) setSelectedTags(data.tags);
+      if (data.dueDate) setDueDate(new Date(data.dueDate));
+      if (data.reminderMinutes) setReminderMinutes(data.reminderMinutes);
       
-      // Parse date if mentioned
-      if (naturalLanguageInput.toLowerCase().includes("friday")) {
-        const nextFriday = new Date();
-        nextFriday.setDate(nextFriday.getDate() + (5 - nextFriday.getDay()));
-        if (naturalLanguageInput.toLowerCase().includes("3pm")) {
-          nextFriday.setHours(15, 0, 0, 0);
-        }
-        setDueDate(nextFriday);
-      }
-    } else if (naturalLanguageInput.toLowerCase().includes("essay")) {
-      setTitle("Finish Essay");
-      setDescription("Complete the final draft and proofread");
-      setSelectedTags(["school", "assignment"]);
-      setPriority("high");
-      setWorkspace("school");
+      setNaturalLanguageInput("");
+      
+      toast({
+        title: "✨ Task parsed successfully!",
+        description: "AI has filled in the task details based on your input.",
+      });
+    } catch (error) {
+      console.error('Error parsing task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to parse task with AI. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiParsing(false);
     }
-    
-    setIsAiParsing(false);
-    setNaturalLanguageInput("");
-    
-    toast({
-      title: "✨ Task parsed successfully!",
-      description: "AI has filled in the task details based on your input.",
-    });
   };
 
   const handleSaveTask = async () => {

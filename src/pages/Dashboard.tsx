@@ -89,18 +89,6 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
           </Button>
         </div>
 
-        {/* Add task link */}
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start p-0 h-auto text-primary hover:text-primary"
-          onClick={() => navigate('/create')}
-        >
-          <div 
-            className="w-4 h-4 rounded-full mr-2 flex-shrink-0" 
-            style={{ backgroundColor: workspace.color }}
-          />
-          Add a task
-        </Button>
 
         {/* Future tasks section */}
         {workspaceTasks.length > 0 && (

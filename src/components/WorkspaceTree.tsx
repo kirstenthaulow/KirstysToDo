@@ -282,20 +282,6 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
             <FolderItem key={folder.id} folder={folder} />
           ))}
         </div>
-        
-        {/* Show workspace tasks (tasks not in any folder) */}
-        {workspaceTasks.length > 0 && (
-          <div className="mt-6 space-y-3">
-            <h4 className="text-sm font-medium text-muted-foreground">Tasks not in folders</h4>
-            <TaskList
-              filter="all"
-              searchQuery=""
-              workspaceFilter={workspaceId}
-              showWorkspaceDots={false}
-              compact={true}
-            />
-          </div>
-        )}
 
         {/* Show selected folder tasks */}
         {selectedFolder && (
@@ -315,7 +301,7 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
         )}
         
         {/* Show workspace tasks directly if no folders */}
-        {folders.length === 0 && workspaceTasks.length === 0 && (
+        {folders.length === 0 && (
           <div className="space-y-4">
             <TaskList
               filter="all"
@@ -323,6 +309,21 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
               workspaceFilter={workspaceId}
               showWorkspaceDots={false}
               compact={false}
+            />
+          </div>
+        )}
+        
+        {/* Show workspace tasks (tasks not in any folder) at the bottom */}
+        {workspaceTasks.length > 0 && folders.length > 0 && (
+          <div className="mt-6 space-y-3">
+            <h4 className="text-sm font-medium text-muted-foreground">Tasks not in folders</h4>
+            <TaskList
+              filter="all"
+              searchQuery=""
+              workspaceFilter={workspaceId}
+              folderFilter={null}
+              showWorkspaceDots={false}
+              compact={true}
             />
           </div>
         )}
