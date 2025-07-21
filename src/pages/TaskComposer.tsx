@@ -1,28 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, Tag, Save, Sparkles } from "lucide-react";
+import { Calendar, Clock, MapPin, Tag, Save, Sparkles, LogOut, ArrowLeft } from "lucide-react";
 import { TaskPrioritySelector } from "@/components/TaskPrioritySelector";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { TagSelector } from "@/components/TagSelector";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 const TaskComposer = () => {
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
   const [workspace, setWorkspace] = useState("");
   const [location, setLocation] = useState("");
   const [naturalLanguageInput, setNaturalLanguageInput] = useState("");
   const [isAiParsing, setIsAiParsing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleAiParse = async () => {
     if (!naturalLanguageInput.trim()) return;
@@ -66,7 +72,7 @@ const TaskComposer = () => {
     });
   };
 
-  const handleSaveTask = () => {
+  const handleSaveTask = async () => {
     if (!title.trim()) {
       toast({
         title: "Error",
@@ -76,20 +82,142 @@ const TaskComposer = () => {
       return;
     }
 
-    // In a real app, this would save to the database
-    toast({
-      title: "Task created!",
-      description: `"${title}" has been added to your tasks.`,
-    });
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create tasks.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Reset form
-    setTitle("");
-    setDescription("");
-    setDueDate(undefined);
-    setSelectedTags([]);
-    setPriority("medium");
-    setWorkspace("");
-    setLocation("");
+    setIsSaving(true);
+
+    try {
+      // Get or create workspace
+      let workspaceId = workspace;
+
+      if (!workspaceId) {
+        // Create default workspace if none selected
+        const { data: workspaces } = await supabase
+          .from('workspaces')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+
+        if (workspaces && workspaces.length > 0) {
+          workspaceId = workspaces[0].id;
+        } else {
+          const { data: newWorkspace, error: workspaceError } = await supabase
+            .from('workspaces')
+            .insert({
+              user_id: user.id,
+              name: 'Personal',
+              color: '#6366F1'
+            })
+            .select('id')
+            .single();
+
+          if (workspaceError) throw workspaceError;
+          workspaceId = newWorkspace.id;
+        }
+      }
+
+      // Create the task
+      const { data: task, error: taskError } = await supabase
+        .from('tasks')
+        .insert({
+          user_id: user.id,
+          workspace_id: workspaceId,
+          title: title.trim(),
+          description: description.trim() || null,
+          due_date: dueDate ? dueDate.toISOString() : null,
+          priority: priority,
+          status: 'pending'
+        })
+        .select('id')
+        .single();
+
+      if (taskError) throw taskError;
+
+      // Handle tags if any selected
+      if (selectedTags.length > 0 && task) {
+        for (const tagName of selectedTags) {
+          // Get or create tag
+          let { data: existingTag } = await supabase
+            .from('tags')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('name', tagName)
+            .single();
+
+          let tagId;
+          if (existingTag) {
+            tagId = existingTag.id;
+          } else {
+            const { data: newTag, error: tagError } = await supabase
+              .from('tags')
+              .insert({
+                user_id: user.id,
+                name: tagName,
+                color: '#F59E0B'
+              })
+              .select('id')
+              .single();
+
+            if (tagError) throw tagError;
+            tagId = newTag.id;
+          }
+
+          // Link tag to task
+          await supabase
+            .from('task_tags')
+            .insert({
+              task_id: task.id,
+              tag_id: tagId
+            });
+        }
+      }
+
+      toast({
+        title: "Task created successfully!",
+        description: `"${title}" has been added to your tasks.`,
+      });
+
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setDueDate(undefined);
+      setSelectedTags([]);
+      setPriority("medium");
+      setWorkspace("");
+      setLocation("");
+
+      // Navigate back to dashboard
+      navigate("/");
+    } catch (error) {
+      console.error('Error creating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create task. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -98,9 +226,22 @@ const TaskComposer = () => {
       <header className="border-b bg-card px-6 py-4">
         <div className="mx-auto max-w-4xl">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Create New Task</h1>
-              <p className="text-sm text-muted-foreground">Add a new task with AI-powered assistance</p>
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground">Create New Task</h1>
+                <p className="text-sm text-muted-foreground">Add a new task with AI-powered assistance</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">
+                {user?.email}
+              </span>
+              <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -236,11 +377,21 @@ const TaskComposer = () => {
 
               {/* Actions */}
               <div className="flex space-x-2 pt-4">
-                <Button onClick={handleSaveTask} className="flex-1">
+                <Button 
+                  onClick={handleSaveTask} 
+                  className="flex-1"
+                  disabled={isSaving}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  Save Task
+                  {isSaving ? "Saving..." : "Save Task"}
                 </Button>
-                <Button variant="outline">Save & Add Another</Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate("/")}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
               </div>
             </CardContent>
           </Card>

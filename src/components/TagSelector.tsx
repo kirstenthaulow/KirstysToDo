@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TagSelectorProps {
   selectedTags: string[];
@@ -11,6 +13,8 @@ interface TagSelectorProps {
 
 export const TagSelector = ({ selectedTags, onTagsChange }: TagSelectorProps) => {
   const [inputValue, setInputValue] = useState("");
+  const [userTags, setUserTags] = useState<string[]>([]);
+  const { user } = useAuth();
   
   const commonTags = [
     "work", "personal", "urgent", "meeting", "project", 
@@ -18,7 +22,29 @@ export const TagSelector = ({ selectedTags, onTagsChange }: TagSelectorProps) =>
     "appointment", "call", "email", "review", "planning"
   ];
 
-  const availableTags = commonTags.filter(tag => !selectedTags.includes(tag));
+  useEffect(() => {
+    const fetchUserTags = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('tags')
+          .select('name')
+          .eq('user_id', user.id)
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+        setUserTags(data?.map(tag => tag.name) || []);
+      } catch (error) {
+        console.error('Error fetching user tags:', error);
+      }
+    };
+
+    fetchUserTags();
+  }, [user]);
+
+  const allAvailableTags = [...new Set([...commonTags, ...userTags])];
+  const availableTags = allAvailableTags.filter(tag => !selectedTags.includes(tag));
 
   const handleAddTag = (tag: string) => {
     if (!selectedTags.includes(tag)) {
@@ -75,7 +101,7 @@ export const TagSelector = ({ selectedTags, onTagsChange }: TagSelectorProps) =>
 
       {/* Common tags */}
       <div className="space-y-2">
-        <p className="text-sm font-medium">Common tags:</p>
+        <p className="text-sm font-medium">Available tags:</p>
         <div className="flex flex-wrap gap-2">
           {availableTags.map((tag) => (
             <Button
