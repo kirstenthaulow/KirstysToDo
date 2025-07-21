@@ -4,30 +4,76 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export const QuickAddTask = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleQuickAdd = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !user) return;
 
     setIsProcessing(true);
 
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      // Create default workspace if none exists
+      const { data: workspaces } = await supabase
+        .from('workspaces')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
 
-    // Mock quick task creation
-    toast({
-      title: "✨ Task created!",
-      description: `"${input}" has been added to your tasks with AI-powered suggestions.`,
-    });
+      let workspaceId = workspaces?.[0]?.id;
 
-    setInput("");
-    setOpen(false);
-    setIsProcessing(false);
+      if (!workspaceId) {
+        const { data: newWorkspace, error: workspaceError } = await supabase
+          .from('workspaces')
+          .insert({
+            user_id: user.id,
+            name: 'Personal',
+            color: '#6366F1'
+          })
+          .select('id')
+          .single();
+
+        if (workspaceError) throw workspaceError;
+        workspaceId = newWorkspace.id;
+      }
+
+      // Simple task creation - in a real app this would have AI parsing
+      const { error } = await supabase
+        .from('tasks')
+        .insert({
+          user_id: user.id,
+          workspace_id: workspaceId,
+          title: input.trim(),
+          priority: 'medium',
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "✨ Task created!",
+        description: `"${input}" has been added to your tasks.`,
+      });
+
+      setInput("");
+      setOpen(false);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create task. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (

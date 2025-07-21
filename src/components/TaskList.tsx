@@ -1,21 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar, Clock, MapPin, Tag, MoreHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Task {
   id: string;
   title: string;
-  description?: string;
-  dueDate?: Date;
-  priority: "low" | "medium" | "high";
-  tags: string[];
-  workspace: string;
-  location?: string;
-  completed: boolean;
+  description?: string | null;
+  due_date?: string | null;
+  priority: string;
+  status: string;
+  workspace_id?: string | null;
+  workspace?: { name: string; color: string } | null;
+  task_tags?: { tags: { name: string; color: string } }[];
+  completed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  folder_id?: string | null;
+  reminder_minutes?: number | null;
 }
 
 interface TaskListProps {
@@ -25,40 +33,59 @@ interface TaskListProps {
 
 export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
   const { toast } = useToast();
-  
-  // Mock data - in real app this would come from a database
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      title: "Finish project proposal",
-      description: "Complete the Q4 project proposal for client review",
-      dueDate: new Date(2024, 0, 25, 14, 0),
-      priority: "high",
-      tags: ["work", "urgent"],
-      workspace: "work",
-      completed: false,
-    },
-    {
-      id: "2",
-      title: "Grocery shopping",
-      dueDate: new Date(2024, 0, 24, 18, 0),
-      priority: "low",
-      tags: ["personal", "errands"],
-      workspace: "personal",
-      location: "Local supermarket",
-      completed: false,
-    },
-    {
-      id: "3",
-      title: "Study for exam",
-      description: "Review chapters 8-12 for chemistry exam",
-      dueDate: new Date(2024, 0, 26, 9, 0),
-      priority: "high",
-      tags: ["school", "exam"],
-      workspace: "school",
-      completed: false,
-    },
-  ]);
+  const { user } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchTasks = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          workspace:workspaces(name, color),
+          task_tags(
+            tags(name, color)
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setTasks(data || []);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load tasks",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [user]);
+
+  // Set up real-time updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('task-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` },
+        () => fetchTasks()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -69,7 +96,8 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const taskDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -93,27 +121,69 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
     
     switch (filter) {
       case "today":
-        return task.dueDate && new Date(task.dueDate.getFullYear(), task.dueDate.getMonth(), task.dueDate.getDate()).getTime() === today.getTime();
+        if (!task.due_date) return false;
+        const taskDate = new Date(task.due_date);
+        return new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate()).getTime() === today.getTime();
       case "upcoming":
-        return task.dueDate && task.dueDate > today;
+        if (!task.due_date) return false;
+        return new Date(task.due_date) > today;
       case "overdue":
-        return task.dueDate && task.dueDate < now && !task.completed;
+        if (!task.due_date) return false;
+        return new Date(task.due_date) < now && task.status !== 'completed';
+      case "completed":
+        return task.status === 'completed';
       default:
         return true;
     }
   });
 
-  const handleTaskComplete = (taskId: string) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    ));
-    
+  const handleTaskComplete = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
-    toast({
-      title: task?.completed ? "Task reopened" : "Task completed! 🎉",
-      description: `"${task?.title}" ${task?.completed ? "has been reopened" : "has been marked as complete"}`,
-    });
+    if (!task) return;
+
+    const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+    
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          status: newStatus,
+          completed_at: newStatus === 'completed' ? new Date().toISOString() : null
+        })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      toast({
+        title: newStatus === 'completed' ? "Task completed! 🎉" : "Task reopened",
+        description: `"${task.title}" ${newStatus === 'completed' ? "has been marked as complete" : "has been reopened"}`,
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update task",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardContent className="p-4">
+              <div className="animate-pulse space-y-2">
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+                <div className="h-3 bg-muted rounded w-1/2"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -125,11 +195,11 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
         </Card>
       ) : (
         filteredTasks.map((task) => (
-          <Card key={task.id} className={`transition-all hover:shadow-md ${task.completed ? 'opacity-60' : ''}`}>
+          <Card key={task.id} className={`transition-all hover:shadow-md ${task.status === 'completed' ? 'opacity-60' : ''}`}>
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
                 <Checkbox
-                  checked={task.completed}
+                  checked={task.status === 'completed'}
                   onCheckedChange={() => handleTaskComplete(task.id)}
                   className="mt-1"
                 />
@@ -137,7 +207,7 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
                 <div className="flex-1 space-y-2">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <h3 className={`font-medium ${task.completed ? 'line-through' : ''}`}>
+                      <h3 className={`font-medium ${task.status === 'completed' ? 'line-through' : ''}`}>
                         {task.title}
                       </h3>
                       {task.description && (
@@ -156,32 +226,27 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
                   </div>
 
                   <div className="flex items-center flex-wrap gap-3 text-sm text-muted-foreground">
-                    {task.dueDate && (
+                    {task.due_date && (
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-3 w-3" />
-                        <span>{formatDate(task.dueDate)}</span>
+                        <span>{formatDate(task.due_date)}</span>
                       </div>
                     )}
                     
-                    {task.location && (
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>{task.location}</span>
-                      </div>
+                    {task.workspace && (
+                      <Badge variant="outline" className="text-xs">
+                        {task.workspace.name}
+                      </Badge>
                     )}
-                    
-                    <Badge variant="outline" className="text-xs">
-                      {task.workspace}
-                    </Badge>
                   </div>
 
-                  {task.tags.length > 0 && (
+                  {task.task_tags && task.task_tags.length > 0 && (
                     <div className="flex items-center space-x-2">
                       <Tag className="h-3 w-3 text-muted-foreground" />
                       <div className="flex flex-wrap gap-1">
-                        {task.tags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
+                        {task.task_tags.map((taskTag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {taskTag.tags.name}
                           </Badge>
                         ))}
                       </div>
