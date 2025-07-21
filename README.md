@@ -1,4 +1,4 @@
-# Project Spark Helper Bot 🔥
+# KirstysToDo 🔥
 
 [project-spark-helper-bot.lovable.app](https://project-spark-helper-bot.lovable.app)
 
