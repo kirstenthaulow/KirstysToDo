@@ -9,6 +9,7 @@ import { Calendar, Clock, MapPin, Tag, MoreHorizontal, Trash2, Mail } from "luci
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
 
 interface Task {
   id: string;
@@ -41,6 +42,8 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
 
   const fetchTasks = async () => {
     if (!user) return;
@@ -256,6 +259,19 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
     }
   };
 
+  const openTaskDetails = (task: Task) => {
+    setSelectedTask(task);
+    setTaskDetailsOpen(true);
+  };
+
+  const handleTaskUpdated = () => {
+    fetchTasks();
+  };
+
+  const handleTaskDeleted = () => {
+    fetchTasks();
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -283,7 +299,11 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
         </Card>
       ) : (
         filteredTasks.map((task) => (
-          <Card key={task.id} className={`transition-all hover:shadow-md ${task.status === 'completed' ? 'opacity-60' : ''} ${compact ? 'mb-2' : ''}`}>
+          <Card 
+            key={task.id} 
+            className={`transition-all hover:shadow-md cursor-pointer ${task.status === 'completed' ? 'opacity-60' : ''} ${compact ? 'mb-2' : ''}`}
+            onClick={() => openTaskDetails(task)}
+          >
             <CardContent className={compact ? "p-3" : "p-4"}>
               <div className="flex items-start space-x-3">
                 {showWorkspaceDots && task.workspace && (
@@ -295,6 +315,7 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
                 <Checkbox
                   checked={task.status === 'completed'}
                   onCheckedChange={() => handleTaskComplete(task.id)}
+                  onClick={(e) => e.stopPropagation()}
                   className="mt-1"
                 />
                 
@@ -315,7 +336,12 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
                       <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -384,6 +410,14 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
           </Card>
         ))
       )}
+
+      <TaskDetailsDialog
+        task={selectedTask}
+        open={taskDetailsOpen}
+        onOpenChange={setTaskDetailsOpen}
+        onTaskUpdated={handleTaskUpdated}
+        onTaskDeleted={handleTaskDeleted}
+      />
     </div>
   );
 };

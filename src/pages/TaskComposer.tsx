@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, Tag, Save, Sparkles, LogOut, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, Tag, Save, Sparkles, LogOut, ArrowLeft } from "lucide-react";
 import { TaskPrioritySelector } from "@/components/TaskPrioritySelector";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { DateTimePicker } from "@/components/DateTimePicker";
@@ -25,7 +25,6 @@ const TaskComposer = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
   const [workspace, setWorkspace] = useState("");
-  const [location, setLocation] = useState("");
   const [naturalLanguageInput, setNaturalLanguageInput] = useState("");
   const [isAiParsing, setIsAiParsing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -42,7 +41,6 @@ const TaskComposer = () => {
     if (naturalLanguageInput.toLowerCase().includes("dentist")) {
       setTitle("Dentist Appointment");
       setDescription("Regular checkup and cleaning");
-      setLocation("Downtown Dental Clinic");
       setSelectedTags(["health", "appointment"]);
       setPriority("medium");
       
@@ -191,7 +189,6 @@ const TaskComposer = () => {
       setSelectedTags([]);
       setPriority("medium");
       setWorkspace("");
-      setLocation("");
 
       // Navigate back to dashboard
       navigate("/");
@@ -336,25 +333,13 @@ const TaskComposer = () => {
                 </div>
               </div>
 
-              {/* Workspace & Location */}
+              {/* Workspace */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Workspace</Label>
                   <WorkspaceSelector
                     value={workspace}
                     onValueChange={setWorkspace}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>Location</span>
-                  </Label>
-                  <Input
-                    placeholder="Where will this happen?"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
                   />
                 </div>
               </div>

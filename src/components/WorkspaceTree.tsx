@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { TaskList } from "@/components/TaskList";
+import { CreateFolderDialog } from "@/components/CreateFolderDialog";
 
 interface WorkspaceTreeProps {
   workspaceId: string;
@@ -238,10 +239,13 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
               {workspaceName || 'Folder Structure'}
             </CardTitle>
           </div>
-          <Button variant="outline" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            New Folder
-          </Button>
+          <CreateFolderDialog
+            workspaceId={workspaceId}
+            onFolderCreated={() => {
+              fetchFolders();
+              onRefresh();
+            }}
+          />
         </div>
       </CardHeader>
       <CardContent>
@@ -254,9 +258,6 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
         {/* Show workspace tasks directly if no folders */}
         {folders.length === 0 && (
           <div className="space-y-4">
-            <div className="text-center py-4">
-              <p className="text-muted-foreground mb-4">Tasks in this workspace:</p>
-            </div>
             <TaskList
               filter="all"
               searchQuery=""
@@ -265,10 +266,19 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
               compact={false}
             />
             <div className="text-center py-4">
-              <Button variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Create your first folder
-              </Button>
+              <CreateFolderDialog
+                workspaceId={workspaceId}
+                onFolderCreated={() => {
+                  fetchFolders();
+                  onRefresh();
+                }}
+                trigger={
+                  <Button variant="outline">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create your first folder
+                  </Button>
+                }
+              />
             </div>
           </div>
         )}
