@@ -29,9 +29,12 @@ interface Task {
 interface TaskListProps {
   filter: string;
   searchQuery: string;
+  workspaceFilter?: string | null;
+  showWorkspaceDots?: boolean;
+  compact?: boolean;
 }
 
-export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
+export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDots = false, compact = false }: TaskListProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -41,7 +44,7 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('tasks')
         .select(`
           *,
@@ -51,6 +54,13 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
           )
         `)
         .eq('user_id', user.id);
+
+      // Filter by workspace if specified
+      if (workspaceFilter) {
+        query = query.eq('workspace_id', workspaceFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setTasks(data || []);
@@ -68,7 +78,7 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
 
   useEffect(() => {
     fetchTasks();
-  }, [user]);
+  }, [user, workspaceFilter]);
 
   // Set up real-time updates
   useEffect(() => {
@@ -85,7 +95,7 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, workspaceFilter]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -124,6 +134,11 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
         if (!task.due_date) return false;
         const taskDate = new Date(task.due_date);
         return new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate()).getTime() === today.getTime();
+      case "week":
+        if (!task.due_date) return false;
+        const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const taskDateTime = new Date(task.due_date);
+        return taskDateTime >= today && taskDateTime <= weekFromNow;
       case "upcoming":
         if (!task.due_date) return false;
         return new Date(task.due_date) > today;
@@ -195,9 +210,15 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
         </Card>
       ) : (
         filteredTasks.map((task) => (
-          <Card key={task.id} className={`transition-all hover:shadow-md ${task.status === 'completed' ? 'opacity-60' : ''}`}>
-            <CardContent className="p-4">
+          <Card key={task.id} className={`transition-all hover:shadow-md ${task.status === 'completed' ? 'opacity-60' : ''} ${compact ? 'mb-2' : ''}`}>
+            <CardContent className={compact ? "p-3" : "p-4"}>
               <div className="flex items-start space-x-3">
+                {showWorkspaceDots && task.workspace && (
+                  <div 
+                    className="w-3 h-3 rounded-full mt-1 flex-shrink-0" 
+                    style={{ backgroundColor: task.workspace.color }}
+                  />
+                )}
                 <Checkbox
                   checked={task.status === 'completed'}
                   onCheckedChange={() => handleTaskComplete(task.id)}
@@ -233,7 +254,7 @@ export const TaskList = ({ filter, searchQuery }: TaskListProps) => {
                       </div>
                     )}
                     
-                    {task.workspace && (
+                    {task.workspace && !showWorkspaceDots && (
                       <Badge variant="outline" className="text-xs">
                         {task.workspace.name}
                       </Badge>

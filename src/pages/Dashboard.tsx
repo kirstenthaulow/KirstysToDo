@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Calendar, Clock, Search, Filter, LogOut, User } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight } from "lucide-react";
 import { TaskList } from "@/components/TaskList";
 import { QuickAddTask } from "@/components/QuickAddTask";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +15,9 @@ import { useNavigate } from "react-router-dom";
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("today");
+  const [upcomingView, setUpcomingView] = useState<"today" | "week">("today");
+  const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
+  const [workspaces, setWorkspaces] = useState<any[]>([]);
   const [taskCounts, setTaskCounts] = useState({
     today: 0,
     upcoming: 0,
@@ -24,14 +28,38 @@ const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const fetchWorkspaces = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('workspaces')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setWorkspaces(data || []);
+    } catch (error) {
+      console.error('Error fetching workspaces:', error);
+    }
+  };
+
   const fetchTaskCounts = async () => {
     if (!user) return;
 
     try {
-      const { data: tasks, error } = await supabase
+      let query = supabase
         .from('tasks')
         .select('due_date, status')
         .eq('user_id', user.id);
+
+      // Filter by workspace if selected
+      if (selectedWorkspace) {
+        query = query.eq('workspace_id', selectedWorkspace);
+      }
+
+      const { data: tasks, error } = await query;
 
       if (error) throw error;
 
@@ -67,10 +95,13 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    fetchTaskCounts();
+    fetchWorkspaces();
   }, [user]);
 
-  // Set up real-time updates for counts
+  useEffect(() => {
+    fetchTaskCounts();
+  }, [user, selectedWorkspace]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -78,14 +109,17 @@ const Dashboard = () => {
       .channel('task-count-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` },
-        () => fetchTaskCounts()
+        () => {
+          fetchTaskCounts();
+          fetchWorkspaces();
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, selectedWorkspace]);
 
   const handleSignOut = async () => {
     try {
@@ -106,6 +140,8 @@ const Dashboard = () => {
     { id: "overdue", label: "Overdue", count: taskCounts.overdue },
     { id: "all", label: "All", count: taskCounts.all },
   ];
+
+  const currentWorkspace = selectedWorkspace ? workspaces.find(w => w.id === selectedWorkspace) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,7 +170,88 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="mx-auto max-w-6xl px-6 py-6">
-        <div className="grid gap-6 lg:grid-cols-4">
+        {/* Upcoming Tasks Section */}
+        <div className="mb-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">
+                  {upcomingView === "today" ? "Today's Tasks" : "This Week's Tasks"}
+                </CardTitle>
+                <Tabs value={upcomingView} onValueChange={(value: "today" | "week") => setUpcomingView(value)}>
+                  <TabsList>
+                    <TabsTrigger value="today">Today</TabsTrigger>
+                    <TabsTrigger value="week">7 Days</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <TaskList 
+                filter={upcomingView} 
+                searchQuery="" 
+                workspaceFilter={selectedWorkspace}
+                showWorkspaceDots={true}
+                compact={true}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Workspace Navigation */}
+        {workspaces.length > 0 && (
+          <div className="mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm font-medium">Workspace:</span>
+                    <div className="flex items-center space-x-2">
+                      {currentWorkspace ? (
+                        <>
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: currentWorkspace.color }}
+                          />
+                          <span className="font-medium">{currentWorkspace.name}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">All Workspaces</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedWorkspace(null)}
+                      className={!selectedWorkspace ? "bg-muted" : ""}
+                    >
+                      All
+                    </Button>
+                    {workspaces.map((workspace) => (
+                      <Button
+                        key={workspace.id}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedWorkspace(workspace.id)}
+                        className={`flex items-center space-x-2 ${selectedWorkspace === workspace.id ? "bg-muted" : ""}`}
+                      >
+                        <div 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: workspace.color }}
+                        />
+                        <span>{workspace.name}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-4">{/* rest continues the same */}
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <Card>
@@ -201,7 +318,12 @@ const Dashboard = () => {
             </div>
 
             {/* Tasks */}
-            <TaskList filter={activeFilter} searchQuery={searchQuery} />
+            <TaskList 
+              filter={activeFilter} 
+              searchQuery={searchQuery} 
+              workspaceFilter={selectedWorkspace}
+              showWorkspaceDots={true}
+            />
           </div>
         </div>
       </main>
