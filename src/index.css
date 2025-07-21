@@ -10,31 +10,32 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 120 40% 98%;
-    --foreground: 120 40% 10%;
+    /* Very lightly tinted yellow background */
+    --background: 50 100% 98%;
+    --foreground: 50 20% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 120 40% 10%;
+    --card-foreground: 50 20% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 120 40% 10%;
+    --popover-foreground: 50 20% 10%;
 
-    /* KirstysToDos Primary: Green #588157 */
-    --primary: 120 18% 42%;
+    /* Fresh Orange Primary */
+    --primary: 28 100% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 120 14% 96%;
-    --secondary-foreground: 120 40% 10%;
+    --secondary: 50 30% 96%;
+    --secondary-foreground: 50 20% 10%;
 
-    --muted: 120 14% 96%;
-    --muted-foreground: 120 9% 46%;
+    --muted: 50 30% 96%;
+    --muted-foreground: 50 15% 46%;
 
-    /* KirstysToDos Accent: Soft Green for hover */
-    --accent: 120 15% 90%;
-    --accent-foreground: 120 40% 10%;
+    /* Light Orange for hover */
+    --accent: 28 100% 92%;
+    --accent-foreground: 50 20% 10%;
 
     /* Task Text Color */
-    --task-foreground: 120 30% 25%;
+    --task-foreground: 50 25% 25%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;

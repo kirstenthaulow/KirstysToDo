@@ -314,14 +314,14 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
         )}
         
         {/* Show workspace tasks (tasks not in any folder) at the bottom */}
-        {workspaceTasks.length > 0 && folders.length > 0 && (
+        {folders.length > 0 && (
           <div className="mt-6 space-y-3">
             <h4 className="text-sm font-medium text-muted-foreground">Tasks not in folders</h4>
             <TaskList
               filter="all"
               searchQuery=""
               workspaceFilter={workspaceId}
-              folderFilter={null}
+              folderFilter="none"
               showWorkspaceDots={false}
               compact={true}
             />

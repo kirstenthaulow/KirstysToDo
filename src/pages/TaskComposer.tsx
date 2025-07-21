@@ -24,7 +24,7 @@ const TaskComposer = () => {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [workspace, setWorkspace] = useState("");
   const [selectedFolder, setSelectedFolder] = useState<string>("none");
   const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
@@ -253,12 +253,17 @@ const TaskComposer = () => {
         <div className="mx-auto max-w-4xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-4">
                 <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" onClick={() => navigate("/workspaces")}>
-                  Workspaces
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/workspaces')}
+                  className="flex items-center space-x-2"
+                >
+                  <Folder className="h-4 w-4" />
+                  <span>Workspaces</span>
                 </Button>
               </div>
               <div>
@@ -353,7 +358,7 @@ const TaskComposer = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 flex flex-col justify-end">
                   <Label>Priority</Label>
                   <TaskPrioritySelector
                     priority={priority}

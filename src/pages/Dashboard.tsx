@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight, CheckCircle2, Folder } from "lucide-react";
+import { CalendarView } from "@/components/CalendarView";
 import { TaskList } from "@/components/TaskList";
 import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
 import { QuickAddTask } from "@/components/QuickAddTask";
@@ -93,20 +94,24 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
         {/* Future tasks section */}
         {workspaceTasks.length > 0 && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Upcoming</p>
             {workspaceTasks.map((task) => (
               <div 
                 key={task.id} 
-                className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
+                className="flex items-center space-x-3 cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
                 onClick={() => openTaskDetails(task)}
               >
-                <div className="w-4 h-4 rounded border border-muted-foreground flex-shrink-0" />
-                <span className="truncate">{task.title}</span>
-                {task.due_date && (
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    {new Date(task.due_date).toLocaleDateString()}
-                  </span>
-                )}
+                <div 
+                  className="w-5 h-5 rounded border-2 border-muted-foreground flex-shrink-0" 
+                  style={{ borderColor: workspace.color }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-medium truncate">{task.title}</p>
+                  {task.due_date && (
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(task.due_date).toLocaleDateString()} {new Date(task.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -119,11 +124,14 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
             {noDateTasks.slice(0, 2).map((task) => (
               <div 
                 key={task.id} 
-                className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
+                className="flex items-center space-x-3 cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
                 onClick={() => openTaskDetails(task)}
               >
-                <div className="w-4 h-4 rounded border border-muted-foreground flex-shrink-0" />
-                <span className="truncate">{task.title}</span>
+                <div 
+                  className="w-5 h-5 rounded border-2 border-muted-foreground flex-shrink-0" 
+                  style={{ borderColor: workspace.color }}
+                />
+                <p className="text-base font-medium truncate">{task.title}</p>
               </div>
             ))}
             {noDateTasks.length > 2 && (
@@ -314,7 +322,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-foreground">KirstysToDos</h1>
-              <p className="text-sm text-muted-foreground">Your smart task organizer</p>
+              <p className="text-sm text-muted-foreground">Kirstens personal to-do app</p>
             </div>
             <div className="flex items-center space-x-4">
               <QuickAddTask />
@@ -342,8 +350,9 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="mx-auto max-w-6xl px-6 py-6">
         {/* Tasks Section */}
-        <div className="mb-6">
-          <Card>
+        <div className="mb-6 grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">
@@ -370,6 +379,12 @@ const Dashboard = () => {
               />
             </CardContent>
           </Card>
+          </div>
+          
+          {/* Calendar View */}
+          <div className="lg:col-span-1">
+            <CalendarView workspaces={workspaces} />
+          </div>
         </div>
 
 

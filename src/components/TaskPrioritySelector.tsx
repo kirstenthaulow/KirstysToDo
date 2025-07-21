@@ -3,8 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, AlertCircle, Circle, Minus } from "lucide-react";
 
 interface TaskPrioritySelectorProps {
-  priority: "low" | "medium" | "high" | "urgent";
-  onPriorityChange: (priority: "low" | "medium" | "high" | "urgent") => void;
+  priority: "low" | "medium" | "high";
+  onPriorityChange: (priority: "low" | "medium" | "high") => void;
 }
 
 export const TaskPrioritySelector = ({ priority, onPriorityChange }: TaskPrioritySelectorProps) => {
@@ -28,13 +28,6 @@ export const TaskPrioritySelector = ({ priority, onPriorityChange }: TaskPriorit
       label: "High",
       icon: AlertCircle,
       color: "bg-red-500",
-      variant: "outline" as const,
-    },
-    {
-      value: "urgent" as const,
-      label: "Urgent",
-      icon: AlertTriangle,
-      color: "bg-red-600",
       variant: "outline" as const,
     },
   ];
