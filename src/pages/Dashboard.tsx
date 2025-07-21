@@ -363,14 +363,9 @@ const Dashboard = () => {
                 <SettingsIcon className="h-4 w-4" />
                 <span>Settings</span>
               </Button>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">
-                  {user?.email}
-                </span>
-                <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
