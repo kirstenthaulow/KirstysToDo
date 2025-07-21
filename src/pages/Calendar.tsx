@@ -191,24 +191,24 @@ const Calendar = () => {
                       {day.getDate()}
                     </div>
                     
-                    <div className="space-y-1">
+                    <div className="space-y-1 overflow-hidden h-[88px]">
                       {tasksForDay.slice(0, 3).map((task) => (
                         <div
                           key={task.id}
-                          className="text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity"
+                          className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity overflow-hidden"
                           style={{ 
                             backgroundColor: task.workspace.color,
                             color: 'white'
                           }}
                           title={`${task.title} - ${task.workspace.name} at ${formatTime(task.due_date)}`}
                         >
-                          <div className="font-medium truncate">{task.title}</div>
-                          <div className="opacity-90">{formatTime(task.due_date)}</div>
+                          <div className="font-medium truncate leading-tight">{task.title}</div>
+                          <div className="opacity-90 text-[10px] leading-tight">{formatTime(task.due_date)}</div>
                         </div>
                       ))}
                       
                       {tasksForDay.length > 3 && (
-                        <div className="text-xs text-muted-foreground p-1">
+                        <div className="text-xs text-muted-foreground p-1 leading-tight">
                           +{tasksForDay.length - 3} more
                         </div>
                       )}

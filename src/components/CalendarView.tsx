@@ -156,17 +156,6 @@ export const CalendarView = ({ workspaces }: CalendarViewProps) => {
                 }`}
               >
                 <span>{day.getDate()}</span>
-                {tasksForDay.length > 0 && (
-                  <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 flex space-x-0.5">
-                    {tasksForDay.slice(0, 2).map((task, taskIndex) => (
-                      <div
-                        key={taskIndex}
-                        className="w-1 h-1 rounded-full"
-                        style={{ backgroundColor: task.workspaceColor }}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
             );
           })}
