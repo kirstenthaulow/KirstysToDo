@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
-import { useTimeFormat } from "@/hooks/useTimeFormat";
+import { useTimeFormat } from "../hooks/useTimeFormat";
 
 interface Task {
   id: string;
@@ -40,9 +40,12 @@ interface TaskListProps {
 }
 
 export const TaskList = ({ filter, searchQuery, workspaceFilter, folderFilter, showWorkspaceDots = false, compact = false }: TaskListProps) => {
+  console.log("TaskList component rendering");
   const { toast } = useToast();
   const { user } = useAuth();
+  console.log("About to call useTimeFormat");
   const { formatTime } = useTimeFormat();
+  console.log("useTimeFormat called successfully");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);

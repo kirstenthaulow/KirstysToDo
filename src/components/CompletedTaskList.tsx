@@ -6,7 +6,7 @@ import { CheckCircle, RotateCcw, Trash2, Calendar, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useTimeFormat } from "@/hooks/useTimeFormat";
+import { useTimeFormat } from "../hooks/useTimeFormat";
 
 interface CompletedTask {
   id: string;

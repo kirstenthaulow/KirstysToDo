@@ -11,7 +11,7 @@ import { Bell, Mail, Smartphone, Moon, Sun, Globe, Clock, User, Shield, ArrowLef
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/components/theme-provider";
 import { useNavigate } from "react-router-dom";
-import { useTimeFormat } from "@/hooks/useTimeFormat";
+import { useTimeFormat } from "../hooks/useTimeFormat";
 
 const Settings = () => {
   const { toast } = useToast();

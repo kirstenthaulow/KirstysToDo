@@ -45,9 +45,17 @@ export function TimeFormatProvider({ children }: { children: React.ReactNode }) 
 }
 
 export function useTimeFormat() {
+  console.log("useTimeFormat hook called");
   const context = useContext(TimeFormatContext);
+  console.log("TimeFormatContext value:", context);
   if (!context) {
-    throw new Error("useTimeFormat must be used within TimeFormatProvider");
+    console.error("useTimeFormat called outside of TimeFormatProvider - using fallback");
+    // Provide fallback instead of throwing error
+    return {
+      timeFormat: "12" as TimeFormat,
+      setTimeFormat: () => {},
+      formatTime: (date: Date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+    };
   }
   return context;
 }
