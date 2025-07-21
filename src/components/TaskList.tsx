@@ -67,7 +67,9 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, folderFilter, s
       }
 
       // Filter by folder if specified
-      if (folderFilter) {
+      if (folderFilter === "none") {
+        query = query.is('folder_id', null);
+      } else if (folderFilter) {
         query = query.eq('folder_id', folderFilter);
       }
 

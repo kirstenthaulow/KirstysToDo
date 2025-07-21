@@ -9,6 +9,7 @@ import Workspaces from "./pages/Workspaces";
 import TaskComposer from "./pages/TaskComposer";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
+import Calendar from "./pages/Calendar";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -81,6 +82,11 @@ const App = () => (
             <Route path="/history" element={
               <ProtectedRoute>
                 <History />
+              </ProtectedRoute>
+            } />
+            <Route path="/calendar" element={
+              <ProtectedRoute>
+                <Calendar />
               </ProtectedRoute>
             } />
             <Route path="/settings" element={

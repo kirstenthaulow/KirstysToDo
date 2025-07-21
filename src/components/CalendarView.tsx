@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 interface CalendarViewProps {
   workspaces: any[];
@@ -18,6 +19,7 @@ export const CalendarView = ({ workspaces }: CalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [taskDates, setTaskDates] = useState<TaskCount[]>([]);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const fetchTaskDates = async () => {
     if (!user || workspaces.length === 0) return;
@@ -97,26 +99,42 @@ export const CalendarView = ({ workspaces }: CalendarViewProps) => {
   const days = getDaysInMonth(currentDate);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => navigate('/calendar')}>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">
+          <CardTitle className="text-sm font-medium">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </CardTitle>
           <div className="flex space-x-1">
-            <Button variant="ghost" size="icon" onClick={goToPreviousMonth}>
-              <ChevronLeft className="h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6" 
+              onClick={(e) => {
+                e.stopPropagation();
+                goToPreviousMonth();
+              }}
+            >
+              <ChevronLeft className="h-3 w-3" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={goToNextMonth}>
-              <ChevronRight className="h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6" 
+              onClick={(e) => {
+                e.stopPropagation();
+                goToNextMonth();
+              }}
+            >
+              <ChevronRight className="h-3 w-3" />
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         <div className="grid grid-cols-7 gap-1 mb-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center text-xs font-medium text-muted-foreground p-2">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+            <div key={day} className="text-center text-xs font-medium text-muted-foreground p-1">
               {day}
             </div>
           ))}
@@ -124,7 +142,7 @@ export const CalendarView = ({ workspaces }: CalendarViewProps) => {
         <div className="grid grid-cols-7 gap-1">
           {days.map((day, index) => {
             if (!day) {
-              return <div key={index} className="h-8"></div>;
+              return <div key={index} className="h-6"></div>;
             }
             
             const tasksForDay = getTasksForDate(day);
@@ -133,14 +151,14 @@ export const CalendarView = ({ workspaces }: CalendarViewProps) => {
             return (
               <div
                 key={index}
-                className={`h-8 flex items-center justify-center text-sm relative ${
+                className={`h-6 flex items-center justify-center text-xs relative ${
                   isToday ? 'bg-primary text-primary-foreground rounded' : 'hover:bg-accent rounded'
                 }`}
               >
                 <span>{day.getDate()}</span>
                 {tasksForDay.length > 0 && (
                   <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 flex space-x-0.5">
-                    {tasksForDay.slice(0, 3).map((task, taskIndex) => (
+                    {tasksForDay.slice(0, 2).map((task, taskIndex) => (
                       <div
                         key={taskIndex}
                         className="w-1 h-1 rounded-full"
