@@ -27,6 +27,13 @@ serve(async (req) => {
       );
     }
 
+    console.log('Sending request to OpenAI with input:', input);
+    
+    if (!openAIApiKey) {
+      console.error('OpenAI API key is not set');
+      throw new Error('OpenAI API key is not configured');
+    }
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -40,7 +47,7 @@ serve(async (req) => {
             role: 'system', 
             content: `You are a task parsing assistant. Parse the user's natural language input into structured task data.
 
-Return a JSON object with these fields (only include fields that can be extracted from the input):
+Return ONLY a valid JSON object with these fields (only include fields that can be extracted from the input):
 - title: string (required - the main task title)
 - description: string (optional - additional details)
 - priority: "low" | "medium" | "high" | "urgent" (optional - based on urgency keywords)
@@ -55,7 +62,7 @@ Output: {"title": "Dentist appointment", "tags": ["health", "appointment"], "due
 Input: "Urgent: finish essay by tomorrow"
 Output: {"title": "Finish essay", "priority": "urgent", "tags": ["school", "assignment"]}
 
-Be concise and extract only what's clearly mentioned in the input.`
+Return only the JSON object, no other text.`
           },
           { role: 'user', content: input }
         ],
@@ -64,8 +71,12 @@ Be concise and extract only what's clearly mentioned in the input.`
       }),
     });
 
+    console.log('OpenAI response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error('OpenAI API request failed');
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API request failed: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
