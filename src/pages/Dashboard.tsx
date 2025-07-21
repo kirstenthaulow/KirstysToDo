@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight, CheckCircle2, Folder } from "lucide-react";
 import { TaskList } from "@/components/TaskList";
 import { QuickAddTask } from "@/components/QuickAddTask";
 import { useAuth } from "@/hooks/useAuth";
@@ -258,11 +258,19 @@ const Dashboard = () => {
         <div className="mx-auto max-w-6xl">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">TaskNest</h1>
+              <h1 className="text-2xl font-semibold text-foreground">KirstysToDos</h1>
               <p className="text-sm text-muted-foreground">Your smart task organizer</p>
             </div>
             <div className="flex items-center space-x-4">
               <QuickAddTask />
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/workspaces')}
+                className="flex items-center space-x-2"
+              >
+                <Folder className="h-4 w-4" />
+                <span>Workspaces</span>
+              </Button>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">
                   {user?.email}
@@ -305,58 +313,6 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Workspace Navigation */}
-        {workspaces.length > 0 && (
-          <div className="mb-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <span className="text-sm font-medium">Workspace:</span>
-                    <div className="flex items-center space-x-2">
-                      {currentWorkspace ? (
-                        <>
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: currentWorkspace.color }}
-                          />
-                          <span className="font-medium">{currentWorkspace.name}</span>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">All Workspaces</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedWorkspace(null)}
-                      className={!selectedWorkspace ? "bg-muted" : ""}
-                    >
-                      All
-                    </Button>
-                    {workspaces.map((workspace) => (
-                      <Button
-                        key={workspace.id}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedWorkspace(workspace.id)}
-                        className={`flex items-center space-x-2 ${selectedWorkspace === workspace.id ? "bg-muted" : ""}`}
-                      >
-                        <div 
-                          className="w-2 h-2 rounded-full" 
-                          style={{ backgroundColor: workspace.color }}
-                        />
-                        <span>{workspace.name}</span>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Workspace Grid */}
         {workspaces.length > 0 && (

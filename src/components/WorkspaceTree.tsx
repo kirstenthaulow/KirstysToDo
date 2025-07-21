@@ -9,10 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 
 interface WorkspaceTreeProps {
   workspaceId: string;
+  workspaceName?: string;
+  workspaceColor?: string;
   onRefresh: () => void;
 }
 
-export const WorkspaceTree = ({ workspaceId, onRefresh }: WorkspaceTreeProps) => {
+export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRefresh }: WorkspaceTreeProps) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [folders, setFolders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,7 +161,17 @@ export const WorkspaceTree = ({ workspaceId, onRefresh }: WorkspaceTreeProps) =>
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Folder Structure</CardTitle>
+          <div className="flex items-center space-x-3">
+            {workspaceColor && (
+              <div 
+                className="h-4 w-4 rounded-full" 
+                style={{ backgroundColor: workspaceColor }}
+              />
+            )}
+            <CardTitle className="text-lg">
+              {workspaceName || 'Folder Structure'}
+            </CardTitle>
+          </div>
           <Button variant="outline" size="sm">
             <Plus className="mr-2 h-4 w-4" />
             New Folder

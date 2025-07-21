@@ -18,13 +18,13 @@ export const CreateWorkspaceDialog = ({ open, onOpenChange, onWorkspaceCreated }
   const { toast } = useToast();
   const { user } = useAuth();
   const [name, setName] = useState("");
-  const [selectedColor, setSelectedColor] = useState("#6366F1");
+  const [selectedColor, setSelectedColor] = useState("#588157");
 
   const colors = [
-    { id: "#6366F1", name: "Indigo", class: "#6366F1" },
+    { id: "#588157", name: "Green", class: "#588157" },
     { id: "#F59E0B", name: "Amber", class: "#F59E0B" },
     { id: "#EF4444", name: "Red", class: "#EF4444" },
-    { id: "#10B981", name: "Green", class: "#10B981" },
+    { id: "#10B981", name: "Emerald", class: "#10B981" },
     { id: "#3B82F6", name: "Blue", class: "#3B82F6" },
     { id: "#8B5CF6", name: "Purple", class: "#8B5CF6" },
     { id: "#EC4899", name: "Pink", class: "#EC4899" },
@@ -59,7 +59,7 @@ export const CreateWorkspaceDialog = ({ open, onOpenChange, onWorkspaceCreated }
 
       // Reset form and close dialog
       setName("");
-      setSelectedColor("#6366F1");
+      setSelectedColor("#588157");
       onOpenChange(false);
       onWorkspaceCreated();
     } catch (error) {

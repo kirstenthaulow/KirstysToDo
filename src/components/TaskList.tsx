@@ -99,6 +99,7 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
+      case "urgent": return "bg-red-600";
       case "high": return "bg-red-500";
       case "medium": return "bg-yellow-500";
       case "low": return "bg-green-500";
@@ -228,7 +229,7 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
                 <div className="flex-1 space-y-2">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <h3 className={`font-medium ${task.status === 'completed' ? 'line-through' : ''}`}>
+                      <h3 className={`font-medium ${task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-[hsl(var(--task-foreground))]'}`}>
                         {task.title}
                       </h3>
                       {task.description && (

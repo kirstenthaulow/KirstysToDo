@@ -140,7 +140,7 @@ const Workspaces = () => {
         <div className="mx-auto max-w-6xl">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">Workspaces</h1>
+              <h1 className="text-2xl font-semibold text-foreground">KirstysToDos - Workspaces</h1>
               <p className="text-sm text-muted-foreground">Organize your tasks by context</p>
             </div>
             <div className="flex items-center space-x-4">
@@ -207,29 +207,11 @@ const Workspaces = () => {
           <div className="lg:col-span-3">
             {selectedWorkspace && (
               <div className="space-y-6">
-                {/* Workspace Header */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className="h-4 w-4 rounded-full" 
-                          style={{ backgroundColor: workspaces.find(w => w.id === selectedWorkspace)?.color }}
-                        />
-                        <CardTitle className="text-xl">
-                          {workspaces.find(w => w.id === selectedWorkspace)?.name}
-                        </CardTitle>
-                      </div>
-                      <Button variant="outline" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                </Card>
-
-                {/* Folder Structure */}
+                {/* Folder Structure with integrated workspace title */}
                 <WorkspaceTree 
                   workspaceId={selectedWorkspace}
+                  workspaceName={workspaces.find(w => w.id === selectedWorkspace)?.name}
+                  workspaceColor={workspaces.find(w => w.id === selectedWorkspace)?.color}
                   onRefresh={fetchWorkspaces}
                 />
               </div>

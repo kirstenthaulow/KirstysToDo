@@ -1,28 +1,77 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { CheckCircle, RotateCcw, Trash2, Search, Calendar } from "lucide-react";
 import { CompletedTaskList } from "@/components/CompletedTaskList";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const History = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState("all");
+  const [periods, setPeriods] = useState([
+    { id: "today", label: "Today", count: 0 },
+    { id: "week", label: "This Week", count: 0 },
+    { id: "month", label: "This Month", count: 0 },
+    { id: "all", label: "All Time", count: 0 },
+  ]);
+  const [stats, setStats] = useState({
+    totalCompleted: 0,
+    thisWeek: 0,
+    avgPerDay: 0,
+    streak: 0,
+  });
+  const { user } = useAuth();
 
-  const periods = [
-    { id: "today", label: "Today", count: 3 },
-    { id: "week", label: "This Week", count: 12 },
-    { id: "month", label: "This Month", count: 45 },
-    { id: "all", label: "All Time", count: 156 },
-  ];
+  const fetchStats = async () => {
+    if (!user) return;
 
-  const stats = {
-    totalCompleted: 156,
-    thisWeek: 12,
-    avgPerDay: 2.3,
-    streak: 7,
+    try {
+      const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select('completed_at')
+        .eq('user_id', user.id)
+        .eq('status', 'completed');
+
+      if (error) throw error;
+
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const todayCount = tasks?.filter(t => {
+        const taskDate = new Date(t.completed_at);
+        return new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate()).getTime() === today.getTime();
+      }).length || 0;
+
+      const weekCount = tasks?.filter(t => new Date(t.completed_at) >= weekAgo).length || 0;
+      const monthCount = tasks?.filter(t => new Date(t.completed_at) >= monthAgo).length || 0;
+      const totalCount = tasks?.length || 0;
+
+      setPeriods([
+        { id: "today", label: "Today", count: todayCount },
+        { id: "week", label: "This Week", count: weekCount },
+        { id: "month", label: "This Month", count: monthCount },
+        { id: "all", label: "All Time", count: totalCount },
+      ]);
+
+      setStats({
+        totalCompleted: totalCount,
+        thisWeek: weekCount,
+        avgPerDay: weekCount > 0 ? Math.round((weekCount / 7) * 10) / 10 : 0,
+        streak: todayCount > 0 ? 1 : 0, // Simplified streak calculation
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
   };
+
+  useEffect(() => {
+    fetchStats();
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,7 +80,7 @@ const History = () => {
         <div className="mx-auto max-w-6xl">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">Task History</h1>
+              <h1 className="text-2xl font-semibold text-foreground">KirstysToDos - History</h1>
               <p className="text-sm text-muted-foreground">View and manage completed tasks</p>
             </div>
           </div>
