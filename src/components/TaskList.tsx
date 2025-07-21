@@ -139,12 +139,12 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
         const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
         const taskDateTime = new Date(task.due_date);
         return taskDateTime >= today && taskDateTime <= weekFromNow;
-      case "upcoming":
-        if (!task.due_date) return false;
-        return new Date(task.due_date) > today;
       case "overdue":
         if (!task.due_date) return false;
         return new Date(task.due_date) < now && task.status !== 'completed';
+      case "upcoming":
+        if (!task.due_date) return false;
+        return new Date(task.due_date) > today;
       case "completed":
         return task.status === 'completed';
       default:

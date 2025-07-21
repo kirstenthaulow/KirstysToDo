@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 import { TaskList } from "@/components/TaskList";
 import { QuickAddTask } from "@/components/QuickAddTask";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,10 +12,125 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
+interface WorkspaceCardProps {
+  workspace: any;
+  onNavigate: () => void;
+}
+
+const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
+  const [workspaceTasks, setWorkspaceTasks] = useState<any[]>([]);
+  const [completedCount, setCompletedCount] = useState(0);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchWorkspaceTasks = async () => {
+      if (!user) return;
+
+      try {
+        const { data: tasks, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('workspace_id', workspace.id);
+
+        if (error) throw error;
+
+        const activeTasks = tasks?.filter(t => t.status !== 'completed') || [];
+        const completed = tasks?.filter(t => t.status === 'completed') || [];
+        
+        setWorkspaceTasks(activeTasks);
+        setCompletedCount(completed.length);
+      } catch (error) {
+        console.error('Error fetching workspace tasks:', error);
+      }
+    };
+
+    fetchWorkspaceTasks();
+  }, [workspace.id, user]);
+
+  const noDateTasks = workspaceTasks.filter(task => !task.due_date);
+  const allCompleted = workspaceTasks.length === 0 && completedCount > 0;
+
+  return (
+    <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-lg">{workspace.name}</h3>
+          <Button variant="ghost" size="icon" className="h-6 w-6">
+            <span className="text-lg">⋯</span>
+          </Button>
+        </div>
+
+        {/* Add task link */}
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start p-0 h-auto text-primary hover:text-primary"
+          onClick={() => navigate('/create')}
+        >
+          <div 
+            className="w-4 h-4 rounded-full mr-2 flex-shrink-0" 
+            style={{ backgroundColor: workspace.color }}
+          />
+          Add a task
+        </Button>
+
+        {/* No date section */}
+        {noDateTasks.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">No date</p>
+            {noDateTasks.slice(0, 3).map((task) => (
+              <div key={task.id} className="flex items-center space-x-2 text-sm">
+                <div className="w-4 h-4 rounded border border-muted-foreground flex-shrink-0" />
+                <span className="truncate">{task.title}</span>
+              </div>
+            ))}
+            {noDateTasks.length > 3 && (
+              <p className="text-xs text-muted-foreground">
+                +{noDateTasks.length - 3} more tasks
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Illustration and completion message */}
+        <div className="flex flex-col items-center space-y-3 py-6">
+          {allCompleted ? (
+            <>
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-green-600" />
+              </div>
+              <div className="text-center">
+                <p className="font-medium text-sm">All tasks completed</p>
+                <p className="text-xs text-muted-foreground">Great job!</p>
+              </div>
+            </>
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+              <Calendar className="w-8 h-8 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+
+        {/* Completed section */}
+        {completedCount > 0 && (
+          <Button 
+            variant="ghost" 
+            className="w-full justify-between p-0 h-auto text-muted-foreground hover:text-foreground"
+            onClick={onNavigate}
+          >
+            <span className="text-sm">Completed ({completedCount})</span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+};
+
 const Dashboard = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("today");
-  const [upcomingView, setUpcomingView] = useState<"today" | "week">("today");
+  const [upcomingView, setUpcomingView] = useState<"today" | "week" | "overdue">("today");
   const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
   const [workspaces, setWorkspaces] = useState<any[]>([]);
   const [taskCounts, setTaskCounts] = useState({
@@ -134,13 +249,6 @@ const Dashboard = () => {
     }
   };
 
-  const filters = [
-    { id: "today", label: "Today", count: taskCounts.today },
-    { id: "upcoming", label: "Upcoming", count: taskCounts.upcoming },
-    { id: "overdue", label: "Overdue", count: taskCounts.overdue },
-    { id: "all", label: "All", count: taskCounts.all },
-  ];
-
   const currentWorkspace = selectedWorkspace ? workspaces.find(w => w.id === selectedWorkspace) : null;
 
   return (
@@ -170,18 +278,17 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="mx-auto max-w-6xl px-6 py-6">
-        {/* Upcoming Tasks Section */}
+        {/* Tasks Section */}
         <div className="mb-6">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">
-                  {upcomingView === "today" ? "Today's Tasks" : "This Week's Tasks"}
-                </CardTitle>
-                <Tabs value={upcomingView} onValueChange={(value: "today" | "week") => setUpcomingView(value)}>
+                <CardTitle className="text-lg">Tasks</CardTitle>
+                <Tabs value={upcomingView} onValueChange={(value: "today" | "week" | "overdue") => setUpcomingView(value)}>
                   <TabsList>
                     <TabsTrigger value="today">Today</TabsTrigger>
                     <TabsTrigger value="week">7 Days</TabsTrigger>
+                    <TabsTrigger value="overdue">Overdue</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -251,81 +358,18 @@ const Dashboard = () => {
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-4">{/* rest continues the same */}
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Filters</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {filters.map((filter) => (
-                  <Button
-                    key={filter.id}
-                    variant={activeFilter === filter.id ? "default" : "ghost"}
-                    className="w-full justify-between"
-                    onClick={() => setActiveFilter(filter.id)}
-                  >
-                    <span>{filter.label}</span>
-                    <Badge variant="secondary" className="ml-2">
-                      {filter.count}
-                    </Badge>
-                  </Button>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle className="text-lg">Today's Overview</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    <span className="text-sm">Due Today</span>
-                  </div>
-                  <Badge variant="default">{taskCounts.today}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-4 w-4 text-accent" />
-                    <span className="text-sm">Upcoming</span>
-                  </div>
-                  <Badge variant="secondary">{taskCounts.upcoming}</Badge>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Workspace Grid */}
+        {workspaces.length > 0 && (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {workspaces.map((workspace) => (
+              <WorkspaceCard 
+                key={workspace.id} 
+                workspace={workspace} 
+                onNavigate={() => navigate('/workspaces')}
+              />
+            ))}
           </div>
-
-          {/* Task List */}
-          <div className="lg:col-span-3">
-            {/* Search Bar */}
-            <div className="mb-6 flex items-center space-x-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search tasks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Tasks */}
-            <TaskList 
-              filter={activeFilter} 
-              searchQuery={searchQuery} 
-              workspaceFilter={selectedWorkspace}
-              showWorkspaceDots={true}
-            />
-          </div>
-        </div>
+        )}
       </main>
     </div>
   );
