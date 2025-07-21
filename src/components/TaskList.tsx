@@ -3,7 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Clock, MapPin, Tag, MoreHorizontal } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Calendar, Clock, MapPin, Tag, MoreHorizontal, Trash2, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -184,6 +186,76 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
     }
   };
 
+  const deleteTask = async (taskId: string) => {
+    try {
+      // First delete task_tags
+      await supabase
+        .from('task_tags')
+        .delete()
+        .eq('task_id', taskId);
+
+      // Then delete the task
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Task deleted",
+        description: "Task has been deleted successfully",
+      });
+
+      fetchTasks();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const sendReminderEmail = async (task: any) => {
+    try {
+      if (!user?.email) {
+        toast({
+          title: "Error",
+          description: "No email address found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await supabase.functions.invoke('send-reminder-email', {
+        body: {
+          to: user.email,
+          taskTitle: task.title,
+          taskDescription: task.description,
+          dueDate: task.due_date,
+          userEmail: user.email,
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      toast({
+        title: "Reminder sent",
+        description: "Email reminder sent successfully",
+      });
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send reminder email. Make sure your email provider is configured.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -241,9 +313,41 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
                     
                     <div className="flex items-center space-x-2">
                       <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => sendReminderEmail(task)}>
+                            <Mail className="mr-2 h-4 w-4" />
+                            Send Email Reminder
+                          </DropdownMenuItem>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Task
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete the task "{task.title}". This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteTask(task.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
 

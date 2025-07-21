@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Folder, ChevronRight, MoreHorizontal, LogOut } from "lucide-react";
+import { Plus, Folder, ChevronRight, MoreHorizontal, LogOut, ArrowLeft, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { WorkspaceTree } from "@/components/WorkspaceTree";
 import { CreateWorkspaceDialog } from "@/components/CreateWorkspaceDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -102,6 +104,68 @@ const Workspaces = () => {
     };
   }, [user]);
 
+  const deleteWorkspace = async (workspaceId: string) => {
+    try {
+      // First delete all task_tags for tasks in this workspace
+      const { data: workspaceTasks } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', user?.id);
+
+      if (workspaceTasks) {
+        for (const task of workspaceTasks) {
+          await supabase
+            .from('task_tags')
+            .delete()
+            .eq('task_id', task.id);
+        }
+      }
+
+      // Delete all tasks in this workspace
+      await supabase
+        .from('tasks')
+        .delete()
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', user?.id);
+
+      // Delete all folders in this workspace
+      await supabase
+        .from('folders')
+        .delete()
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', user?.id);
+
+      // Finally delete the workspace
+      const { error } = await supabase
+        .from('workspaces')
+        .delete()
+        .eq('id', workspaceId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Workspace deleted",
+        description: "Workspace and all its content have been deleted",
+      });
+
+      // Reset selected workspace if it was deleted
+      if (selectedWorkspace === workspaceId) {
+        setSelectedWorkspace(null);
+      }
+
+      fetchWorkspaces();
+    } catch (error) {
+      console.error('Error deleting workspace:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete workspace",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -139,9 +203,14 @@ const Workspaces = () => {
       <header className="border-b bg-card px-6 py-4">
         <div className="mx-auto max-w-6xl">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">KirstysToDos - Workspaces</h1>
-              <p className="text-sm text-muted-foreground">Organize your tasks by context</p>
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground">KirstysToDos - Workspaces</h1>
+                <p className="text-sm text-muted-foreground">Organize your tasks by context</p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <Button onClick={() => setShowCreateDialog(true)}>
@@ -185,18 +254,50 @@ const Workspaces = () => {
                   </div>
                 ) : (
                   workspaces.map((workspace) => (
-                    <Button
-                      key={workspace.id}
-                      variant={selectedWorkspace === workspace.id ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => setSelectedWorkspace(workspace.id)}
-                    >
-                      <div className={`mr-3 h-3 w-3 rounded-full`} style={{ backgroundColor: workspace.color }} />
-                      <span className="flex-1 text-left">{workspace.name}</span>
-                      <Badge variant="secondary" className="ml-2">
-                        {workspace.taskCount}
-                      </Badge>
-                    </Button>
+                    <div key={workspace.id} className="flex items-center">
+                      <Button
+                        variant={selectedWorkspace === workspace.id ? "default" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => setSelectedWorkspace(workspace.id)}
+                      >
+                        <div className={`mr-3 h-3 w-3 rounded-full`} style={{ backgroundColor: workspace.color }} />
+                        <span className="flex-1 text-left">{workspace.name}</span>
+                        <Badge variant="secondary" className="ml-2">
+                          {workspace.taskCount}
+                        </Badge>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 ml-1">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Workspace
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Workspace</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete the workspace "{workspace.name}", all its folders, and tasks. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteWorkspace(workspace.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   ))
                 )}
               </CardContent>

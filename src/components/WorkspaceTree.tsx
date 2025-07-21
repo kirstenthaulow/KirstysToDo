@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, ChevronDown, Folder, FolderOpen, Plus, MoreHorizontal } from "lucide-react";
+import { ChevronRight, ChevronDown, Folder, FolderOpen, Plus, MoreHorizontal, Trash2, CheckCircle2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { TaskList } from "@/components/TaskList";
 
 interface WorkspaceTreeProps {
   workspaceId: string;
@@ -60,6 +63,41 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const deleteFolder = async (folderId: string) => {
+    try {
+      // First delete all tasks in the folder
+      await supabase
+        .from('tasks')
+        .delete()
+        .eq('folder_id', folderId)
+        .eq('user_id', user?.id);
+
+      // Then delete the folder
+      const { error } = await supabase
+        .from('folders')
+        .delete()
+        .eq('id', folderId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Folder deleted",
+        description: "Folder and all its tasks have been deleted",
+      });
+
+      fetchFolders();
+      onRefresh();
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete folder",
+        variant: "destructive",
+      });
     }
   };
 
@@ -120,9 +158,37 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
             </Badge>
           </div>
           
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Folder
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Folder</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the folder "{folder.name}" and all tasks within it. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => deleteFolder(folder.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {hasSubfolders && isExpanded && (
@@ -185,14 +251,25 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
           ))}
         </div>
         
+        {/* Show workspace tasks directly if no folders */}
         {folders.length === 0 && (
-          <div className="text-center py-8">
-            <Folder className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">No folders yet</p>
-            <Button variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Create your first folder
-            </Button>
+          <div className="space-y-4">
+            <div className="text-center py-4">
+              <p className="text-muted-foreground mb-4">Tasks in this workspace:</p>
+            </div>
+            <TaskList
+              filter="all"
+              searchQuery=""
+              workspaceFilter={workspaceId}
+              showWorkspaceDots={false}
+              compact={false}
+            />
+            <div className="text-center py-4">
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Create your first folder
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

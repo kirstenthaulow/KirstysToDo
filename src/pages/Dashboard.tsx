@@ -39,7 +39,15 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
         const activeTasks = tasks?.filter(t => t.status !== 'completed') || [];
         const completed = tasks?.filter(t => t.status === 'completed') || [];
         
-        setWorkspaceTasks(activeTasks);
+        // Show future tasks with due dates
+        const futureTasks = activeTasks.filter(t => {
+          if (!t.due_date) return false;
+          const taskDate = new Date(t.due_date);
+          const now = new Date();
+          return taskDate > now;
+        });
+        
+        setWorkspaceTasks(futureTasks.length > 0 ? futureTasks.slice(0, 3) : activeTasks.slice(0, 3));
         setCompletedCount(completed.length);
       } catch (error) {
         console.error('Error fetching workspace tasks:', error);
@@ -76,19 +84,37 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
           Add a task
         </Button>
 
+        {/* Future tasks section */}
+        {workspaceTasks.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Upcoming</p>
+            {workspaceTasks.map((task) => (
+              <div key={task.id} className="flex items-center space-x-2 text-sm">
+                <div className="w-4 h-4 rounded border border-muted-foreground flex-shrink-0" />
+                <span className="truncate">{task.title}</span>
+                {task.due_date && (
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {new Date(task.due_date).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* No date section */}
         {noDateTasks.length > 0 && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">No date</p>
-            {noDateTasks.slice(0, 3).map((task) => (
+            {noDateTasks.slice(0, 2).map((task) => (
               <div key={task.id} className="flex items-center space-x-2 text-sm">
                 <div className="w-4 h-4 rounded border border-muted-foreground flex-shrink-0" />
                 <span className="truncate">{task.title}</span>
               </div>
             ))}
-            {noDateTasks.length > 3 && (
+            {noDateTasks.length > 2 && (
               <p className="text-xs text-muted-foreground">
-                +{noDateTasks.length - 3} more tasks
+                +{noDateTasks.length - 2} more tasks
               </p>
             )}
           </div>
@@ -217,6 +243,13 @@ const Dashboard = () => {
     fetchTaskCounts();
   }, [user, selectedWorkspace]);
 
+  // Auto-switch to 7 days if no tasks today
+  useEffect(() => {
+    if (taskCounts.today === 0 && taskCounts.upcoming > 0 && upcomingView === "today") {
+      setUpcomingView("week");
+    }
+  }, [taskCounts.today, taskCounts.upcoming, upcomingView]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -291,7 +324,11 @@ const Dashboard = () => {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Tasks</CardTitle>
+                <CardTitle className="text-lg">
+                  {upcomingView === "today" ? "Today's Tasks" : 
+                   upcomingView === "week" ? "Upcoming Tasks (7 Days)" : 
+                   "Overdue Tasks"}
+                </CardTitle>
                 <Tabs value={upcomingView} onValueChange={(value: "today" | "week" | "overdue") => setUpcomingView(value)}>
                   <TabsList>
                     <TabsTrigger value="today">Today</TabsTrigger>
