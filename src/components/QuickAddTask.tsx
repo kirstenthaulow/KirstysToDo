@@ -7,7 +7,6 @@ export const QuickAddTask = () => {
 
   return (
     <Button 
-      variant="outline" 
       onClick={() => navigate("/create")}
       className="flex items-center space-x-2"
     >
