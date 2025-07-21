@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Tag, Save, Sparkles, LogOut, ArrowLeft } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Clock, Tag, Save, Sparkles, LogOut, ArrowLeft, AlertCircle, Folder } from "lucide-react";
 import { TaskPrioritySelector } from "@/components/TaskPrioritySelector";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { DateTimePicker } from "@/components/DateTimePicker";
@@ -25,9 +26,36 @@ const TaskComposer = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
   const [workspace, setWorkspace] = useState("");
+  const [selectedFolder, setSelectedFolder] = useState<string>("");
+  const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
+  const [folders, setFolders] = useState<any[]>([]);
   const [naturalLanguageInput, setNaturalLanguageInput] = useState("");
   const [isAiParsing, setIsAiParsing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch folders when workspace changes
+  useEffect(() => {
+    const fetchFolders = async () => {
+      if (!workspace || !user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('folders')
+          .select('*')
+          .eq('workspace_id', workspace)
+          .eq('user_id', user.id)
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+        setFolders(data || []);
+      } catch (error) {
+        console.error('Error fetching folders:', error);
+      }
+    };
+
+    fetchFolders();
+    setSelectedFolder(""); // Reset folder selection when workspace changes
+  }, [workspace, user]);
 
   const handleAiParse = async () => {
     if (!naturalLanguageInput.trim()) return;
@@ -127,11 +155,13 @@ const TaskComposer = () => {
         .insert({
           user_id: user.id,
           workspace_id: workspaceId,
+          folder_id: selectedFolder || null,
           title: title.trim(),
           description: description.trim() || null,
           due_date: dueDate ? dueDate.toISOString() : null,
           priority: priority,
-          status: 'pending'
+          status: 'pending',
+          reminder_minutes: reminderMinutes
         })
         .select('id')
         .single();
@@ -189,6 +219,8 @@ const TaskComposer = () => {
       setSelectedTags([]);
       setPriority("medium");
       setWorkspace("");
+      setSelectedFolder("");
+      setReminderMinutes(null);
 
       // Navigate back to dashboard
       navigate("/");
@@ -333,7 +365,7 @@ const TaskComposer = () => {
                 </div>
               </div>
 
-              {/* Workspace */}
+              {/* Workspace & Folder */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Workspace</Label>
@@ -342,6 +374,51 @@ const TaskComposer = () => {
                     onValueChange={setWorkspace}
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center space-x-2">
+                    <Folder className="h-4 w-4" />
+                    <span>Folder (Optional)</span>
+                  </Label>
+                  <Select value={selectedFolder} onValueChange={setSelectedFolder}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a folder" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No folder</SelectItem>
+                      {folders.map((folder) => (
+                        <SelectItem key={folder.id} value={folder.id}>
+                          {folder.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Reminder */}
+              <div className="space-y-2">
+                <Label className="flex items-center space-x-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Email Reminder</span>
+                </Label>
+                <Select
+                  value={reminderMinutes?.toString() || "none"}
+                  onValueChange={(value) => setReminderMinutes(value === "none" ? null : parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Set reminder time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No reminder</SelectItem>
+                    <SelectItem value="15">15 minutes before</SelectItem>
+                    <SelectItem value="30">30 minutes before</SelectItem>
+                    <SelectItem value="60">1 hour before</SelectItem>
+                    <SelectItem value="120">2 hours before</SelectItem>
+                    <SelectItem value="1440">1 day before</SelectItem>
+                    <SelectItem value="10080">1 week before</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Tags */}

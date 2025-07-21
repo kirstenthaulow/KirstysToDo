@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight, CheckCircle2, Folder } from "lucide-react";
 import { TaskList } from "@/components/TaskList";
+import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
 import { QuickAddTask } from "@/components/QuickAddTask";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,45 +21,62 @@ interface WorkspaceCardProps {
 const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
   const [workspaceTasks, setWorkspaceTasks] = useState<any[]>([]);
   const [completedCount, setCompletedCount] = useState(0);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const fetchWorkspaceTasks = async () => {
+    if (!user) return;
+
+    try {
+      const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('workspace_id', workspace.id);
+
+      if (error) throw error;
+
+      const activeTasks = tasks?.filter(t => t.status !== 'completed') || [];
+      const completed = tasks?.filter(t => t.status === 'completed') || [];
+      
+      // Show future tasks with due dates
+      const futureTasks = activeTasks.filter(t => {
+        if (!t.due_date) return false;
+        const taskDate = new Date(t.due_date);
+        const now = new Date();
+        return taskDate > now;
+      });
+      
+      setWorkspaceTasks(futureTasks.length > 0 ? futureTasks.slice(0, 3) : activeTasks.slice(0, 3));
+      setCompletedCount(completed.length);
+    } catch (error) {
+      console.error('Error fetching workspace tasks:', error);
+    }
+  };
+
   useEffect(() => {
-    const fetchWorkspaceTasks = async () => {
-      if (!user) return;
-
-      try {
-        const { data: tasks, error } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('workspace_id', workspace.id);
-
-        if (error) throw error;
-
-        const activeTasks = tasks?.filter(t => t.status !== 'completed') || [];
-        const completed = tasks?.filter(t => t.status === 'completed') || [];
-        
-        // Show future tasks with due dates
-        const futureTasks = activeTasks.filter(t => {
-          if (!t.due_date) return false;
-          const taskDate = new Date(t.due_date);
-          const now = new Date();
-          return taskDate > now;
-        });
-        
-        setWorkspaceTasks(futureTasks.length > 0 ? futureTasks.slice(0, 3) : activeTasks.slice(0, 3));
-        setCompletedCount(completed.length);
-      } catch (error) {
-        console.error('Error fetching workspace tasks:', error);
-      }
-    };
-
     fetchWorkspaceTasks();
   }, [workspace.id, user]);
 
   const noDateTasks = workspaceTasks.filter(task => !task.due_date);
   const allCompleted = workspaceTasks.length === 0 && completedCount > 0;
+
+  const openTaskDetails = (task: any) => {
+    setSelectedTask(task);
+    setTaskDetailsOpen(true);
+  };
+
+  const handleTaskUpdated = () => {
+    // Refresh workspace tasks when a task is updated
+    fetchWorkspaceTasks();
+  };
+
+  const handleTaskDeleted = () => {
+    // Refresh workspace tasks when a task is deleted
+    fetchWorkspaceTasks();
+  };
 
   return (
     <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
@@ -89,7 +107,11 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Upcoming</p>
             {workspaceTasks.map((task) => (
-              <div key={task.id} className="flex items-center space-x-2 text-sm">
+              <div 
+                key={task.id} 
+                className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
+                onClick={() => openTaskDetails(task)}
+              >
                 <div className="w-4 h-4 rounded border border-muted-foreground flex-shrink-0" />
                 <span className="truncate">{task.title}</span>
                 {task.due_date && (
@@ -107,7 +129,11 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">No date</p>
             {noDateTasks.slice(0, 2).map((task) => (
-              <div key={task.id} className="flex items-center space-x-2 text-sm">
+              <div 
+                key={task.id} 
+                className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
+                onClick={() => openTaskDetails(task)}
+              >
                 <div className="w-4 h-4 rounded border border-muted-foreground flex-shrink-0" />
                 <span className="truncate">{task.title}</span>
               </div>
@@ -151,6 +177,14 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
           </Button>
         )}
       </div>
+
+      <TaskDetailsDialog
+        task={selectedTask}
+        open={taskDetailsOpen}
+        onOpenChange={setTaskDetailsOpen}
+        onTaskUpdated={handleTaskUpdated}
+        onTaskDeleted={handleTaskDeleted}
+      />
     </Card>
   );
 };

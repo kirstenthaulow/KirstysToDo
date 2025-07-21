@@ -33,11 +33,12 @@ interface TaskListProps {
   filter: string;
   searchQuery: string;
   workspaceFilter?: string | null;
+  folderFilter?: string | null;
   showWorkspaceDots?: boolean;
   compact?: boolean;
 }
 
-export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDots = false, compact = false }: TaskListProps) => {
+export const TaskList = ({ filter, searchQuery, workspaceFilter, folderFilter, showWorkspaceDots = false, compact = false }: TaskListProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -65,6 +66,11 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
         query = query.eq('workspace_id', workspaceFilter);
       }
 
+      // Filter by folder if specified
+      if (folderFilter) {
+        query = query.eq('folder_id', folderFilter);
+      }
+
       const { data, error } = await query;
 
       if (error) throw error;
@@ -83,7 +89,7 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
 
   useEffect(() => {
     fetchTasks();
-  }, [user, workspaceFilter]);
+  }, [user, workspaceFilter, folderFilter]);
 
   // Set up real-time updates
   useEffect(() => {
@@ -100,7 +106,7 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, showWorkspaceDo
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, workspaceFilter]);
+  }, [user, workspaceFilter, folderFilter]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

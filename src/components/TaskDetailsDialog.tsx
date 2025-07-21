@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Clock, Tag, Mail, Trash2, AlertCircle } from "lucide-react";
+import { Calendar, Clock, Tag, Mail, Trash2, AlertCircle, Folder } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +17,8 @@ interface Task {
   due_date?: string | null;
   priority: string;
   status: string;
+  workspace_id?: string | null;
+  folder_id?: string | null;
   workspace?: { name: string; color: string } | null;
   task_tags?: { tags: { name: string; color: string } }[];
   completed_at?: string | null;
@@ -35,14 +37,38 @@ interface TaskDetailsDialogProps {
 
 export const TaskDetailsDialog = ({ task, open, onOpenChange, onTaskUpdated, onTaskDeleted }: TaskDetailsDialogProps) => {
   const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
+  const [folders, setFolders] = useState<any[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string>("");
   const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (task) {
       setReminderMinutes(task.reminder_minutes);
+      setSelectedFolder(task.folder_id || "");
+      
+      // Fetch folders for the workspace
+      const fetchFolders = async () => {
+        if (!task.workspace_id || !user) return;
+        
+        try {
+          const { data, error } = await supabase
+            .from('folders')
+            .select('*')
+            .eq('workspace_id', task.workspace_id)
+            .eq('user_id', user.id)
+            .order('name', { ascending: true });
+
+          if (error) throw error;
+          setFolders(data || []);
+        } catch (error) {
+          console.error('Error fetching folders:', error);
+        }
+      };
+
+      fetchFolders();
     }
-  }, [task]);
+  }, [task, user]);
 
   const handleTaskComplete = async () => {
     if (!task) return;
@@ -71,6 +97,38 @@ export const TaskDetailsDialog = ({ task, open, onOpenChange, onTaskUpdated, onT
       toast({
         title: "Error",
         description: "Failed to update task",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFolderChange = async (folderId: string) => {
+    if (!task) return;
+
+    const folderValue = folderId === "none" ? null : folderId;
+    setSelectedFolder(folderId);
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ folder_id: folderValue })
+        .eq('id', task.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Task moved",
+        description: folderValue 
+          ? `Task moved to ${folders.find(f => f.id === folderValue)?.name}` 
+          : "Task moved out of folder",
+      });
+
+      onTaskUpdated();
+    } catch (error) {
+      console.error('Error updating folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to move task",
         variant: "destructive",
       });
     }
@@ -275,6 +333,27 @@ export const TaskDetailsDialog = ({ task, open, onOpenChange, onTaskUpdated, onT
                 Send Reminder Now
               </Button>
             </div>
+          </div>
+
+          {/* Folder Selection */}
+          <div>
+            <h4 className="font-medium mb-2 flex items-center">
+              <Folder className="mr-2 h-4 w-4" />
+              Folder
+            </h4>
+            <Select value={selectedFolder} onValueChange={handleFolderChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a folder" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No folder</SelectItem>
+                {folders.map((folder) => (
+                  <SelectItem key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Tags */}

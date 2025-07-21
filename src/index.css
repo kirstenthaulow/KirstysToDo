@@ -29,8 +29,8 @@ All colors MUST be HSL.
     --muted: 120 14% 96%;
     --muted-foreground: 120 9% 46%;
 
-    /* KirstysToDos Accent: Amber #F59E0B */
-    --accent: 43 96% 56%;
+    /* KirstysToDos Accent: Soft Green for hover */
+    --accent: 120 15% 90%;
     --accent-foreground: 120 40% 10%;
 
     /* Task Text Color */
@@ -82,9 +82,9 @@ All colors MUST be HSL.
     --muted: 120 20% 20%;
     --muted-foreground: 120 15% 65%;
 
-    /* KirstysToDos Accent: Brighter Amber for dark mode */
-    --accent: 43 96% 60%;
-    --accent-foreground: 120 25% 8%;
+    /* KirstysToDos Accent: Soft Green for dark mode */
+    --accent: 120 20% 25%;
+    --accent-foreground: 120 40% 95%;
 
     /* Task Text Color for dark mode */
     --task-foreground: 120 35% 75%;

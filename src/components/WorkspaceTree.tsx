@@ -20,7 +20,9 @@ interface WorkspaceTreeProps {
 
 export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRefresh }: WorkspaceTreeProps) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [folders, setFolders] = useState<any[]>([]);
+  const [workspaceTasks, setWorkspaceTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -67,6 +69,25 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
     }
   };
 
+  const fetchWorkspaceTasks = async () => {
+    if (!user || !workspaceId) return;
+
+    try {
+      const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', user.id)
+        .is('folder_id', null)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setWorkspaceTasks(tasks || []);
+    } catch (error) {
+      console.error('Error fetching workspace tasks:', error);
+    }
+  };
+
   const deleteFolder = async (folderId: string) => {
     try {
       // First delete all tasks in the folder
@@ -104,6 +125,7 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
 
   useEffect(() => {
     fetchFolders();
+    fetchWorkspaceTasks();
   }, [workspaceId, user]);
 
   const toggleFolder = (folderId: string) => {
@@ -114,6 +136,10 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
       newExpanded.add(folderId);
     }
     setExpandedFolders(newExpanded);
+  };
+
+  const selectFolder = (folderId: string) => {
+    setSelectedFolder(selectedFolder === folderId ? null : folderId);
   };
 
   const FolderItem = ({ 
@@ -130,12 +156,14 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
     return (
       <div>
         <div 
-          className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
+          className={`flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors ${
+            selectedFolder === folder.id ? 'bg-accent/50' : ''
+          }`}
           style={{ paddingLeft }}
         >
           <div 
             className="flex items-center space-x-2 flex-1"
-            onClick={() => hasSubfolders && toggleFolder(folder.id)}
+            onClick={() => selectFolder(folder.id)}
           >
             {hasSubfolders ? (
               isExpanded ? (
@@ -255,8 +283,39 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
           ))}
         </div>
         
+        {/* Show workspace tasks (tasks not in any folder) */}
+        {workspaceTasks.length > 0 && (
+          <div className="mt-6 space-y-3">
+            <h4 className="text-sm font-medium text-muted-foreground">Tasks not in folders</h4>
+            <TaskList
+              filter="all"
+              searchQuery=""
+              workspaceFilter={workspaceId}
+              showWorkspaceDots={false}
+              compact={true}
+            />
+          </div>
+        )}
+
+        {/* Show selected folder tasks */}
+        {selectedFolder && (
+          <div className="mt-6 space-y-3">
+            <h4 className="text-sm font-medium text-muted-foreground">
+              Tasks in {folders.find(f => f.id === selectedFolder)?.name}
+            </h4>
+            <TaskList
+              filter="all"
+              searchQuery=""
+              workspaceFilter={workspaceId}
+              folderFilter={selectedFolder}
+              showWorkspaceDots={false}
+              compact={true}
+            />
+          </div>
+        )}
+        
         {/* Show workspace tasks directly if no folders */}
-        {folders.length === 0 && (
+        {folders.length === 0 && workspaceTasks.length === 0 && (
           <div className="space-y-4">
             <TaskList
               filter="all"
@@ -265,21 +324,24 @@ export const WorkspaceTree = ({ workspaceId, workspaceName, workspaceColor, onRe
               showWorkspaceDots={false}
               compact={false}
             />
-            <div className="text-center py-4">
-              <CreateFolderDialog
-                workspaceId={workspaceId}
-                onFolderCreated={() => {
-                  fetchFolders();
-                  onRefresh();
-                }}
-                trigger={
-                  <Button variant="outline">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create your first folder
-                  </Button>
-                }
-              />
-            </div>
+          </div>
+        )}
+        
+        {folders.length === 0 && (
+          <div className="text-center py-4">
+            <CreateFolderDialog
+              workspaceId={workspaceId}
+              onFolderCreated={() => {
+                fetchFolders();
+                onRefresh();
+              }}
+              trigger={
+                <Button variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create your first folder
+                </Button>
+              }
+            />
           </div>
         )}
       </CardContent>
