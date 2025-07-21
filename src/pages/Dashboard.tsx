@@ -61,6 +61,31 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
     fetchWorkspaceTasks();
   }, [workspace.id, user]);
 
+  // Add real-time subscriptions for task updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`workspace-${workspace.id}-task-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchWorkspaceTasks(); // Refresh tasks when any task changes
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [workspace.id, user]);
+
   const noDateTasks = workspaceTasks.filter(task => !task.due_date);
   const allCompleted = workspaceTasks.length === 0 && completedCount > 0;
 

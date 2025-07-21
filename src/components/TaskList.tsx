@@ -145,11 +145,11 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, folderFilter, s
     
     switch (filter) {
       case "today":
-        if (!task.due_date) return false;
+        if (!task.due_date || task.status === 'completed') return false;
         const taskDate = new Date(task.due_date);
         return new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate()).getTime() === today.getTime();
       case "week":
-        if (!task.due_date) return false;
+        if (!task.due_date || task.status === 'completed') return false;
         const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
         const taskDateTime = new Date(task.due_date);
         return taskDateTime >= today && taskDateTime <= weekFromNow;
@@ -157,7 +157,7 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, folderFilter, s
         if (!task.due_date) return false;
         return new Date(task.due_date) < now && task.status !== 'completed';
       case "upcoming":
-        if (!task.due_date) return false;
+        if (!task.due_date || task.status === 'completed') return false;
         return new Date(task.due_date) > today;
       case "completed":
         return task.status === 'completed';
