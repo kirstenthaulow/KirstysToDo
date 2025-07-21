@@ -1,32 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, ChevronDown, Folder, FolderOpen, Plus, MoreHorizontal } from "lucide-react";
-
-interface Workspace {
-  id: string;
-  name: string;
-  color: string;
-  taskCount: number;
-  folders: Array<{
-    id: string;
-    name: string;
-    taskCount: number;
-    subfolders?: Array<{
-      id: string;
-      name: string;
-      taskCount: number;
-    }>;
-  }>;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface WorkspaceTreeProps {
-  workspace: Workspace;
+  workspaceId: string;
+  onRefresh: () => void;
 }
 
-export const WorkspaceTree = ({ workspace }: WorkspaceTreeProps) => {
+export const WorkspaceTree = ({ workspaceId, onRefresh }: WorkspaceTreeProps) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [folders, setFolders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const fetchFolders = async () => {
+    if (!user || !workspaceId) return;
+
+    try {
+      const { data: foldersData, error } = await supabase
+        .from('folders')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      // Get task counts for each folder
+      const foldersWithCounts = await Promise.all(
+        (foldersData || []).map(async (folder) => {
+          const { count } = await supabase
+            .from('tasks')
+            .select('*', { count: 'exact', head: true })
+            .eq('folder_id', folder.id)
+            .eq('user_id', user.id);
+
+          return {
+            ...folder,
+            taskCount: count || 0,
+          };
+        })
+      );
+
+      setFolders(foldersWithCounts);
+    } catch (error) {
+      console.error('Error fetching folders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load folders",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFolders();
+  }, [workspaceId, user]);
 
   const toggleFolder = (folderId: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -101,20 +138,22 @@ export const WorkspaceTree = ({ workspace }: WorkspaceTreeProps) => {
     );
   };
 
-  // Add some mock subfolders for demonstration
-  const enhancedWorkspace = {
-    ...workspace,
-    folders: workspace.folders.map(folder => ({
-      ...folder,
-      subfolders: folder.id === "projects" ? [
-        { id: "web-proj", name: "Web Projects", taskCount: 4 },
-        { id: "mobile-proj", name: "Mobile Projects", taskCount: 4 },
-      ] : folder.id === "assignments" ? [
-        { id: "math", name: "Mathematics", taskCount: 5 },
-        { id: "science", name: "Science", taskCount: 5 },
-      ] : undefined
-    }))
-  };
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Folder Structure</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-3">
+            <div className="h-12 bg-muted rounded"></div>
+            <div className="h-12 bg-muted rounded"></div>
+            <div className="h-12 bg-muted rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -129,12 +168,12 @@ export const WorkspaceTree = ({ workspace }: WorkspaceTreeProps) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-1">
-          {enhancedWorkspace.folders.map((folder) => (
+          {folders.map((folder) => (
             <FolderItem key={folder.id} folder={folder} />
           ))}
         </div>
         
-        {enhancedWorkspace.folders.length === 0 && (
+        {folders.length === 0 && (
           <div className="text-center py-8">
             <Folder className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4">No folders yet</p>
