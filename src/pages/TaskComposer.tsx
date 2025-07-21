@@ -26,7 +26,7 @@ const TaskComposer = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
   const [workspace, setWorkspace] = useState("");
-  const [selectedFolder, setSelectedFolder] = useState<string>("");
+  const [selectedFolder, setSelectedFolder] = useState<string>("none");
   const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
   const [folders, setFolders] = useState<any[]>([]);
   const [naturalLanguageInput, setNaturalLanguageInput] = useState("");
@@ -54,7 +54,7 @@ const TaskComposer = () => {
     };
 
     fetchFolders();
-    setSelectedFolder(""); // Reset folder selection when workspace changes
+    setSelectedFolder("none"); // Reset folder selection when workspace changes
   }, [workspace, user]);
 
   const handleAiParse = async () => {
@@ -155,7 +155,7 @@ const TaskComposer = () => {
         .insert({
           user_id: user.id,
           workspace_id: workspaceId,
-          folder_id: selectedFolder || null,
+          folder_id: selectedFolder === "none" ? null : selectedFolder || null,
           title: title.trim(),
           description: description.trim() || null,
           due_date: dueDate ? dueDate.toISOString() : null,
@@ -219,7 +219,7 @@ const TaskComposer = () => {
       setSelectedTags([]);
       setPriority("medium");
       setWorkspace("");
-      setSelectedFolder("");
+      setSelectedFolder("none");
       setReminderMinutes(null);
 
       // Navigate back to dashboard
@@ -385,7 +385,7 @@ const TaskComposer = () => {
                       <SelectValue placeholder="Select a folder" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No folder</SelectItem>
+                      <SelectItem value="none">No folder</SelectItem>
                       {folders.map((folder) => (
                         <SelectItem key={folder.id} value={folder.id}>
                           {folder.name}
