@@ -1,73 +1,69 @@
-# Welcome to your Lovable project
+# Project Spark Helper Bot 🔥
 
-## Project info
+[project-spark-helper-bot.lovable.app](https://project-spark-helper-bot.lovable.app)
 
-**URL**: https://lovable.dev/projects/1204a3d1-ea02-4054-9c84-625f0cb631b5
+A lightweight personal task manager I built to help keep track of everyday tasks. It’s super simple, works in the browser, and focuses on getting things done without all the clutter.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## ✨ What it does
 
-**Use Lovable**
+- ✅ Quickly add tasks  
+- 📅 See what’s due today, coming up, or everything at once  
+- 🏷️ Add priorities, tags, and due dates  
+- 🔔 Get reminder notifications  
+- 🌱 Works on desktop and mobile (still improving layout)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1204a3d1-ea02-4054-9c84-625f0cb631b5) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 💡 What I *want* to add
 
-**Use your preferred IDE**
+I’m working on integrating **AI-based task parsing**, so eventually you’ll be able to type something like:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+> _“Submit lab report by next Thursday evening”_
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+…and the app will automatically fill in the task title and deadline.
 
-Follow these steps:
+Planned ideas:
+- Suggestions for breaking big tasks into smaller steps  
+- Natural language reminders  
+- Goal tracking or recurring tasks
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🚀 Try it out
 
-# Step 3: Install the necessary dependencies.
-npm i
+Use it directly here (simple e-mail signup is needed):  
+👉 [project-spark-helper-bot.lovable.app](https://project-spark-helper-bot.lovable.app)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+---
 
-**Edit a file directly in GitHub**
+## 🛠 Tech stack
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **Frontend**: React + TypeScript  
+- **Styling**: Tailwind CSS  
+- **Storage**: Browser localStorage  
+- **(Planned)**: GPT or similar AI for task input parsing
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🗂️ Example use
 
-## What technologies are used for this project?
+1. Add a task:  
+   _“Clean apartment – due Friday – high priority”_  
+2. Manually pick due date, priority, and tag (for now!)  
+3. Get reminders, mark tasks as done, or edit them later
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🗺️ Roadmap
 
-## How can I deploy this project?
+- [x] Basic task creation & editing  
+- [x] Due dates and priorities  
+- [x] Reminders / notifications  
+- [x] Task categories / tags  
+- [ ] AI-assisted task parsing  
+- [ ] Mobile layout polish  
 
-Simply open [Lovable](https://lovable.dev/projects/1204a3d1-ea02-4054-9c84-625f0cb631b5) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
