@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, ArrowLeft, Calendar as CalendarIcon } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 
 interface Task {
   id: string;
@@ -27,6 +28,7 @@ const Calendar = () => {
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [workspaces, setWorkspaces] = useState<any[]>([]);
   const { user } = useAuth();
+  const { formatTime } = useTimeFormat();
   const navigate = useNavigate();
 
   const fetchWorkspaces = async () => {
@@ -147,8 +149,8 @@ const Calendar = () => {
 
   const days = getDaysInMonth(currentDate);
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatTaskTime = (dateString: string) => {
+    return formatTime(new Date(dateString));
   };
 
   return (
@@ -226,10 +228,10 @@ const Calendar = () => {
                             backgroundColor: task.workspace.color,
                             color: 'white'
                           }}
-                          title={`${task.title} - ${task.workspace.name} at ${formatTime(task.due_date)}`}
+                          title={`${task.title} - ${task.workspace.name} at ${formatTaskTime(task.due_date)}`}
                         >
                           <div className="font-medium truncate leading-none">{task.title}</div>
-                          <div className="opacity-90 text-[9px] leading-none mt-0.5">{formatTime(task.due_date)}</div>
+                          <div className="opacity-90 text-[9px] leading-none mt-0.5">{formatTaskTime(task.due_date)}</div>
                         </div>
                       ))}
                       

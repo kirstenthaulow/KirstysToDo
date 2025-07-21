@@ -6,6 +6,7 @@ import { CheckCircle, RotateCcw, Trash2, Calendar, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 
 interface CompletedTask {
   id: string;
@@ -24,6 +25,7 @@ interface CompletedTaskListProps {
 export const CompletedTaskList = ({ period, searchQuery }: CompletedTaskListProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { formatTime } = useTimeFormat();
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -92,11 +94,11 @@ export const CompletedTaskList = ({ period, searchQuery }: CompletedTaskListProp
     const taskDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     
     if (taskDate.getTime() === today.getTime()) {
-      return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `Today at ${formatTime(date)}`;
     } else if (taskDate.getTime() === today.getTime() - 86400000) {
-      return `Yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `Yesterday at ${formatTime(date)}`;
     } else {
-      return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `${date.toLocaleDateString()} at ${formatTime(date)}`;
     }
   };
 

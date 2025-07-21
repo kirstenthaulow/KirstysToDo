@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 
 interface WorkspaceCardProps {
   workspace: any;
@@ -24,6 +25,7 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
   const { user } = useAuth();
+  const { formatTime } = useTimeFormat();
   const navigate = useNavigate();
 
   const fetchWorkspaceTasks = async () => {
@@ -131,7 +133,7 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
                   <p className="text-base font-medium truncate">{task.title}</p>
                   {task.due_date && (
                     <p className="text-sm text-muted-foreground">
-                      {new Date(task.due_date).toLocaleDateString()} {new Date(task.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(task.due_date).toLocaleDateString()} {formatTime(new Date(task.due_date))}
                     </p>
                   )}
                 </div>
