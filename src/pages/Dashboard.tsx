@@ -349,43 +349,43 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="mx-auto max-w-6xl px-6 py-6">
-        {/* Tasks Section */}
-        <div className="mb-6 grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">
-                  {upcomingView === "today" ? "Today's Tasks" : 
-                   upcomingView === "week" ? "Upcoming Tasks (7 Days)" : 
-                   "Overdue Tasks"}
-                </CardTitle>
-                <Tabs value={upcomingView} onValueChange={(value: "today" | "week" | "overdue") => setUpcomingView(value)}>
-                  <TabsList>
-                    <TabsTrigger value="today">Today</TabsTrigger>
-                    <TabsTrigger value="week">7 Days</TabsTrigger>
-                    <TabsTrigger value="overdue">Overdue</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <TaskList 
-                filter={upcomingView} 
-                searchQuery="" 
-                workspaceFilter={selectedWorkspace}
-                showWorkspaceDots={true}
-                compact={true}
-              />
-            </CardContent>
-          </Card>
-          </div>
-          
-          {/* Calendar View */}
-          <div className="lg:col-span-1">
-            <CalendarView workspaces={workspaces} />
-          </div>
+      {/* Tasks Section */}
+      <div className="mb-6 grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">
+                {upcomingView === "today" ? "Today's Tasks" : 
+                 upcomingView === "week" ? "Upcoming Tasks (7 Days)" : 
+                 "Overdue Tasks"}
+              </CardTitle>
+              <Tabs value={upcomingView} onValueChange={(value: "today" | "week" | "overdue") => setUpcomingView(value)}>
+                <TabsList>
+                  <TabsTrigger value="today">Today</TabsTrigger>
+                  <TabsTrigger value="week">7 Days</TabsTrigger>
+                  <TabsTrigger value="overdue">Overdue</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <TaskList 
+              filter={upcomingView} 
+              searchQuery="" 
+              workspaceFilter={selectedWorkspace}
+              showWorkspaceDots={true}
+              compact={true}
+            />
+          </CardContent>
+        </Card>
         </div>
+        
+        {/* Calendar View */}
+        <div className="lg:col-span-1">
+          <CalendarView workspaces={workspaces} />
+        </div>
+      </div>
 
 
         {/* Workspace Grid */}
