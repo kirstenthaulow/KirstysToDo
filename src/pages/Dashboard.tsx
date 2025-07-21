@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight, CheckCircle2, Folder } from "lucide-react";
+import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight, CheckCircle2, Folder, History as HistoryIcon } from "lucide-react";
 import { CalendarView } from "@/components/CalendarView";
 import { TaskList } from "@/components/TaskList";
 import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
@@ -21,7 +21,6 @@ interface WorkspaceCardProps {
 
 const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
   const [workspaceTasks, setWorkspaceTasks] = useState<any[]>([]);
-  const [completedCount, setCompletedCount] = useState(0);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
   const { user } = useAuth();
@@ -35,14 +34,14 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
         .from('tasks')
         .select('*')
         .eq('user_id', user.id)
-        .eq('workspace_id', workspace.id);
+        .eq('workspace_id', workspace.id)
+        .neq('status', 'completed'); // Only get active tasks
 
       if (error) throw error;
 
-      const activeTasks = tasks?.filter(t => t.status !== 'completed') || [];
-      const completed = tasks?.filter(t => t.status === 'completed') || [];
+      const activeTasks = tasks || [];
       
-      // Show future tasks with due dates
+      // Show future tasks with due dates first
       const futureTasks = activeTasks.filter(t => {
         if (!t.due_date) return false;
         const taskDate = new Date(t.due_date);
@@ -51,7 +50,6 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
       });
       
       setWorkspaceTasks(futureTasks.length > 0 ? futureTasks.slice(0, 3) : activeTasks.slice(0, 3));
-      setCompletedCount(completed.length);
     } catch (error) {
       console.error('Error fetching workspace tasks:', error);
     }
@@ -87,7 +85,7 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
   }, [workspace.id, user]);
 
   const noDateTasks = workspaceTasks.filter(task => !task.due_date);
-  const allCompleted = workspaceTasks.length === 0 && completedCount > 0;
+  const allCompleted = workspaceTasks.length === 0;
 
   const openTaskDetails = (task: any) => {
     setSelectedTask(task);
@@ -167,7 +165,7 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
           </div>
         )}
 
-        {/* Illustration and completion message */}
+        {/* Illustration */}
         <div className="flex flex-col items-center space-y-3 py-6">
           {allCompleted ? (
             <>
@@ -185,18 +183,6 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
             </div>
           )}
         </div>
-
-        {/* Completed section */}
-        {completedCount > 0 && (
-          <Button 
-            variant="ghost" 
-            className="w-full justify-between p-0 h-auto text-muted-foreground hover:text-foreground"
-            onClick={onNavigate}
-          >
-            <span className="text-sm">Completed ({completedCount})</span>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        )}
       </div>
 
       <TaskDetailsDialog
@@ -359,6 +345,14 @@ const Dashboard = () => {
                 <Folder className="h-4 w-4" />
                 <span>Workspaces</span>
               </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/history')}
+                className="flex items-center space-x-2"
+              >
+                <HistoryIcon className="h-4 w-4" />
+                <span>History</span>
+              </Button>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">
                   {user?.email}
@@ -420,7 +414,7 @@ const Dashboard = () => {
               <WorkspaceCard 
                 key={workspace.id} 
                 workspace={workspace} 
-                onNavigate={() => navigate('/workspaces')}
+                onNavigate={() => navigate('/history')}
               />
             ))}
           </div>

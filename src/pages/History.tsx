@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, RotateCcw, Trash2, Search, Calendar } from "lucide-react";
+import { CheckCircle, RotateCcw, Trash2, Search, Calendar, ArrowLeft } from "lucide-react";
 import { CompletedTaskList } from "@/components/CompletedTaskList";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 const History = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,6 +25,7 @@ const History = () => {
     streak: 0,
   });
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const fetchStats = async () => {
     if (!user) return;
@@ -79,9 +81,14 @@ const History = () => {
       <header className="border-b bg-card px-6 py-4">
         <div className="mx-auto max-w-6xl">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">KirstysToDos - History</h1>
-              <p className="text-sm text-muted-foreground">View and manage completed tasks</p>
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground">Task History</h1>
+                <p className="text-sm text-muted-foreground">View and manage completed tasks</p>
+              </div>
             </div>
           </div>
         </div>
