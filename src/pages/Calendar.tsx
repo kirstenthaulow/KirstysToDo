@@ -56,6 +56,7 @@ const Calendar = () => {
           workspace:workspaces(name, color)
         `)
         .eq('user_id', user.id)
+        .neq('status', 'completed')
         .not('due_date', 'is', null);
 
       if (error) throw error;
@@ -191,25 +192,25 @@ const Calendar = () => {
                       {day.getDate()}
                     </div>
                     
-                    <div className="space-y-1 overflow-hidden h-[88px]">
-                      {tasksForDay.slice(0, 3).map((task) => (
+                    <div className="space-y-0.5 overflow-hidden h-[88px]">
+                      {tasksForDay.slice(0, 4).map((task) => (
                         <div
                           key={task.id}
-                          className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity overflow-hidden"
+                          className="text-[10px] px-1 py-0.5 rounded cursor-pointer hover:opacity-80 transition-opacity overflow-hidden"
                           style={{ 
                             backgroundColor: task.workspace.color,
                             color: 'white'
                           }}
                           title={`${task.title} - ${task.workspace.name} at ${formatTime(task.due_date)}`}
                         >
-                          <div className="font-medium truncate leading-tight">{task.title}</div>
-                          <div className="opacity-90 text-[10px] leading-tight">{formatTime(task.due_date)}</div>
+                          <div className="font-medium truncate leading-none">{task.title}</div>
+                          <div className="opacity-90 text-[9px] leading-none mt-0.5">{formatTime(task.due_date)}</div>
                         </div>
                       ))}
                       
-                      {tasksForDay.length > 3 && (
-                        <div className="text-xs text-muted-foreground p-1 leading-tight">
-                          +{tasksForDay.length - 3} more
+                      {tasksForDay.length > 4 && (
+                        <div className="text-[9px] text-muted-foreground px-1 leading-none">
+                          +{tasksForDay.length - 4} more
                         </div>
                       )}
                     </div>

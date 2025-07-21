@@ -29,6 +29,7 @@ export const CalendarView = ({ workspaces }: CalendarViewProps) => {
         .from('tasks')
         .select('due_date, workspace_id')
         .eq('user_id', user.id)
+        .neq('status', 'completed')
         .not('due_date', 'is', null);
 
       if (error) throw error;
