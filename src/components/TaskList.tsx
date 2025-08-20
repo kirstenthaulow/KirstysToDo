@@ -177,6 +177,15 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, folderFilter, s
 
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
     
+    // Optimistic update - update UI immediately
+    setTasks(prevTasks => 
+      prevTasks.map(t => 
+        t.id === taskId 
+          ? { ...t, status: newStatus, completed_at: newStatus === 'completed' ? new Date().toISOString() : null }
+          : t
+      )
+    );
+    
     try {
       const { error } = await supabase
         .from('tasks')
@@ -194,6 +203,16 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, folderFilter, s
       });
     } catch (error) {
       console.error('Error updating task:', error);
+      
+      // Rollback optimistic update on error
+      setTasks(prevTasks => 
+        prevTasks.map(t => 
+          t.id === taskId 
+            ? { ...t, status: task.status, completed_at: task.completed_at }
+            : t
+        )
+      );
+      
       toast({
         title: "Error",
         description: "Failed to update task",

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Calendar, Clock, Search, Filter, LogOut, User, ChevronLeft, ChevronRight, CheckCircle2, Folder, History as HistoryIcon, Settings as SettingsIcon } from "lucide-react";
@@ -26,6 +27,7 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
   const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
   const { user } = useAuth();
   const { formatTime } = useTimeFormat();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const fetchWorkspaceTasks = async () => {
@@ -104,6 +106,50 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
     fetchWorkspaceTasks();
   };
 
+  const handleTaskComplete = async (taskId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent card click
+    
+    const task = workspaceTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+    
+    // Optimistic update - remove task immediately if completing
+    if (newStatus === 'completed') {
+      setWorkspaceTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          status: newStatus,
+          completed_at: newStatus === 'completed' ? new Date().toISOString() : null
+        })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      toast({
+        title: newStatus === 'completed' ? "Task completed! 🎉" : "Task reopened",
+        description: `"${task.title}" ${newStatus === 'completed' ? "has been marked as complete" : "has been reopened"}`,
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      
+      // Rollback optimistic update on error
+      if (newStatus === 'completed') {
+        setWorkspaceTasks(prevTasks => [...prevTasks, task]);
+      }
+      
+      toast({
+        title: "Error",
+        description: "Failed to update task",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
       <div className="space-y-4">
@@ -125,9 +171,11 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
                 className="flex items-center space-x-3 cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
                 onClick={() => openTaskDetails(task)}
               >
-                <div 
-                  className="w-5 h-5 rounded border-2 border-muted-foreground flex-shrink-0" 
-                  style={{ borderColor: workspace.color }}
+                <Checkbox
+                  checked={task.status === 'completed'}
+                  onCheckedChange={(checked) => handleTaskComplete(task.id, { stopPropagation: () => {} } as React.MouseEvent)}
+                  onClick={(e) => handleTaskComplete(task.id, e)}
+                  className="mt-1"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-medium truncate">{task.title}</p>
@@ -152,9 +200,11 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
                 className="flex items-center space-x-3 cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
                 onClick={() => openTaskDetails(task)}
               >
-                <div 
-                  className="w-5 h-5 rounded border-2 border-muted-foreground flex-shrink-0" 
-                  style={{ borderColor: workspace.color }}
+                <Checkbox
+                  checked={task.status === 'completed'}
+                  onCheckedChange={(checked) => handleTaskComplete(task.id, { stopPropagation: () => {} } as React.MouseEvent)}
+                  onClick={(e) => handleTaskComplete(task.id, e)}
+                  className="mt-1"
                 />
                 <p className="text-base font-medium truncate">{task.title}</p>
               </div>
