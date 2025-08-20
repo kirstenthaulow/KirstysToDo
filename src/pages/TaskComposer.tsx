@@ -69,26 +69,74 @@ const TaskComposer = () => {
 
       if (error) throw error;
 
-      // Apply parsed results
-      if (data.title) setTitle(data.title);
-      if (data.description) setDescription(data.description);
-      if (data.priority) setPriority(data.priority);
-      if (data.tags && data.tags.length > 0) setSelectedTags(data.tags);
-      if (data.dueDate) setDueDate(new Date(data.dueDate));
-      if (data.reminderMinutes) setReminderMinutes(data.reminderMinutes);
+      console.log('Received parsed data:', data);
+
+      // Validate and apply parsed results
+      if (data.title && typeof data.title === 'string' && data.title.trim()) {
+        const cleanTitle = data.title.trim();
+        if (cleanTitle.length <= 200) { // Reasonable title length
+          setTitle(cleanTitle);
+        } else {
+          setTitle(cleanTitle.slice(0, 200) + '...');
+        }
+      }
+      
+      if (data.description && typeof data.description === 'string') {
+        setDescription(data.description.trim());
+      }
+      
+      if (data.priority && ['low', 'medium', 'high', 'urgent'].includes(data.priority)) {
+        setPriority(data.priority);
+      }
+      
+      if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
+        // Filter out invalid tags and limit to reasonable number
+        const validTags = data.tags
+          .filter(tag => typeof tag === 'string' && tag.trim().length > 0)
+          .map(tag => tag.trim())
+          .slice(0, 10); // Limit to 10 tags
+        
+        if (validTags.length > 0) {
+          setSelectedTags(validTags);
+        }
+      }
+      
+      if (data.dueDate && typeof data.dueDate === 'string') {
+        try {
+          const parsedDate = new Date(data.dueDate);
+          if (!isNaN(parsedDate.getTime()) && parsedDate > new Date()) {
+            setDueDate(parsedDate);
+          }
+        } catch (dateError) {
+          console.warn('Invalid date format:', data.dueDate);
+        }
+      }
+      
+      if (data.reminderMinutes && typeof data.reminderMinutes === 'number' && data.reminderMinutes > 0) {
+        setReminderMinutes(data.reminderMinutes);
+      }
       
       setNaturalLanguageInput("");
       
       toast({
         title: "✨ Task parsed successfully!",
-        description: "AI has filled in the task details based on your input.",
+        description: `Created: "${data.title}"`,
       });
     } catch (error) {
       console.error('Error parsing task:', error);
+      
+      // Fallback: create a basic task from the input
+      const fallbackTitle = naturalLanguageInput.trim().slice(0, 100);
+      setTitle(fallbackTitle);
+      if (naturalLanguageInput.length > 100) {
+        setDescription(naturalLanguageInput);
+      }
+      setNaturalLanguageInput("");
+      
       toast({
-        title: "Error",
-        description: "Failed to parse task with AI. Please try again.",
-        variant: "destructive",
+        title: "Parsing failed - created basic task",
+        description: "AI parsing failed, but created a basic task from your input.",
+        variant: "default",
       });
     } finally {
       setIsAiParsing(false);
