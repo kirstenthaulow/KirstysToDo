@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Chrome, Mail, Lock, User } from "lucide-react";
+import { Mail, Lock, User } from "lucide-react";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -87,33 +86,6 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
-      });
-
-      if (error) {
-        toast({
-          title: "Google sign in failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
@@ -123,33 +95,11 @@ const Auth = () => {
             Welcome to TaskNest
           </CardTitle>
           <CardDescription className="text-center text-muted-foreground">
-            Organize your tasks across work, school, and personal life
+            Sign in to organize your tasks and boost your productivity
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <Button
-              variant="outline"
-              className="w-full h-11"
-              onClick={handleGoogleSignIn}
-              disabled={isLoading}
-            >
-              <Chrome className="mr-2 h-4 w-4" />
-              Continue with Google
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with email
-                </span>
-              </div>
-            </div>
-
-            <Tabs defaultValue="signin" className="w-full">
+          <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -247,7 +197,6 @@ const Auth = () => {
                 </form>
               </TabsContent>
             </Tabs>
-          </div>
         </CardContent>
       </Card>
     </div>
