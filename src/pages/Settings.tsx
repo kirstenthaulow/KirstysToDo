@@ -12,22 +12,63 @@ import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/components/theme-provider";
 import { useNavigate } from "react-router-dom";
 import { useTimeFormat } from "../hooks/useTimeFormat";
+import { useAuth } from "../hooks/useAuth";
 
 const Settings = () => {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const { timeFormat, setTimeFormat } = useTimeFormat();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [defaultReminder, setDefaultReminder] = useState("15");
   const [weekStart, setWeekStart] = useState("monday");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleSaveSettings = () => {
     toast({
       title: "Settings saved",
       description: "Your preferences have been updated successfully.",
     });
+  };
+
+  const handleSignOut = async () => {
+    setIsLoggingOut(true);
+    try {
+      await signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error signing out",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleSwitchAccount = async () => {
+    setIsLoggingOut(true);
+    try {
+      await signOut();
+      toast({
+        title: "Switching accounts",
+        description: "Please sign in with a different account.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error switching accounts",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -67,14 +108,32 @@ const Settings = () => {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base">Google Account</Label>
-                  <p className="text-sm text-muted-foreground">Connect your Google account for sync</p>
+                  <Label className="text-base">Signed in as</Label>
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
                 </div>
-                <Badge variant="outline">Not Connected</Badge>
+                <Badge variant="secondary">Active</Badge>
               </div>
-              <Button variant="outline" className="w-full">
-                Connect Google Account
-              </Button>
+              
+              <Separator />
+              
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={handleSwitchAccount}
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? "Switching..." : "Switch Account"}
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="w-full" 
+                  onClick={handleSignOut}
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? "Signing out..." : "Sign Out"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

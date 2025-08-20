@@ -38,7 +38,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Clear local state immediately
+      setUser(null);
+      setSession(null);
+      
+      // Clear any cached data from localStorage
+      localStorage.clear();
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Logout error:', error);
+        // Even if logout fails, we've cleared local state
+        // This handles the "Session not found" errors gracefully
+      }
+    } catch (error) {
+      console.error('Unexpected logout error:', error);
+      // Clear local state anyway to prevent stuck sessions
+      setUser(null);
+      setSession(null);
+      localStorage.clear();
+    }
   };
 
   const value = {
