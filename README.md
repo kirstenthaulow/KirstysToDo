@@ -2,7 +2,7 @@
 
 [project-spark-helper-bot.lovable.app](https://project-spark-helper-bot.lovable.app)
 
-A lightweight personal task manager I built to help keep track of everyday tasks. It’s super simple, works in the browser, and focuses on getting things done without all the clutter.
+A lightweight personal task manager I built with the AI-tool loveable. It is used to help keep track of everyday tasks. It’s super simple, works in the browser, and focuses on getting things done without all the clutter.
 
 ---
 
