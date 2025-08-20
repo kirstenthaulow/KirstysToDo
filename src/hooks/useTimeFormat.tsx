@@ -13,12 +13,18 @@ const TimeFormatContext = createContext<TimeFormatContextType | null>(null);
 
 export function TimeFormatProvider({ children }: { children: React.ReactNode }) {
   const [timeFormat, setTimeFormat] = useState<TimeFormat>(() => {
-    const saved = localStorage.getItem("time-format");
-    return (saved as TimeFormat) || "12";
+    try {
+      const saved = localStorage.getItem("time-format");
+      return (saved as TimeFormat) || "12";
+    } catch {
+      return "12";
+    }
   });
 
   useEffect(() => {
-    localStorage.setItem("time-format", timeFormat);
+    try {
+      localStorage.setItem("time-format", timeFormat);
+    } catch {}
   }, [timeFormat]);
 
   const formatTime = (date: Date) => {
