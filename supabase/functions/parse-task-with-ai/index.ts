@@ -83,57 +83,35 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-5-mini-2025-08-07',
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'task_parse',
+            schema: {
+              type: 'object',
+              properties: {
+                title: { type: 'string', minLength: 1, maxLength: 120 },
+                description: { type: 'string' },
+                priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
+                tags: { type: 'array', items: { type: 'string' }, maxItems: 10 },
+                dueDate: { type: 'string', description: 'ISO 8601 datetime in UTC' },
+                reminderMinutes: { type: 'number', minimum: 1, maximum: 10080 }
+              },
+              required: ['title'],
+              additionalProperties: false
+            },
+            strict: true
+          }
+        },
         messages: [
           { 
             role: 'system', 
-            content: `You are a task parsing assistant. Parse the user's natural language input into structured task data.
-
-${getCurrentDateContext()}
-
-CRITICAL INSTRUCTIONS:
-- Return ONLY valid JSON, no other text
-- title should be CONCISE (2-8 words max), not the entire input
-- Extract the core action/task, remove filler words
-- If input is long, summarize the main task for the title
-
-Return a JSON object with these fields (only include fields that can be extracted):
-- title: string (required - concise task name, NOT the full input)
-- description: string (optional - additional details from input)
-- priority: "low" | "medium" | "high" | "urgent" (optional - based on urgency keywords)
-- tags: string[] (optional - relevant categories like "work", "personal", "health", etc.)
-- dueDate: ISO string (optional - if date/time mentioned, use current context above)
-- reminderMinutes: number (optional - minutes before due date, default 15 if reminder mentioned)
-
-DATE/TIME PARSING RULES (use current context above):
-- "today" = today's date from context
-- "tomorrow" = tomorrow's date from context  
-- "next Monday/Tuesday/etc" = next occurrence using context
-- "Friday at 3pm" = next Friday at 15:00
-- If no time specified, default to 09:00 (9 AM)
-- Always return dates in ISO format with UTC timezone
-
-EXAMPLES WITH PROPER TITLES:
-Input: "Dentist appointment next Friday at 3pm"
-Output: {"title": "Dentist Appointment", "description": "Scheduled for next Friday", "tags": ["health", "appointment"], "dueDate": "2025-01-24T15:00:00.000Z", "reminderMinutes": 15}
-
-Input: "I need to submit the quarterly report tomorrow by 5pm for my boss"
-Output: {"title": "Submit Quarterly Report", "description": "For boss, due by 5pm", "tags": ["work"], "dueDate": "2025-01-21T17:00:00.000Z", "reminderMinutes": 30}
-
-Input: "Call mom this weekend to discuss holiday plans"
-Output: {"title": "Call Mom", "description": "Discuss holiday plans", "tags": ["personal", "family"], "dueDate": "2025-01-25T09:00:00.000Z"}
-
-Input: "Urgent: finish essay by Monday morning for English class"
-Output: {"title": "Finish Essay", "description": "For English class", "priority": "urgent", "tags": ["school", "assignment"], "dueDate": "2025-01-27T09:00:00.000Z"}
-
-Input: "Buy groceries today - need milk, bread, and eggs"
-Output: {"title": "Buy Groceries", "description": "Need milk, bread, and eggs", "tags": ["personal", "shopping"], "dueDate": "2025-01-20T09:00:00.000Z"}
-
-Return only the JSON object, no markdown or other formatting.`
+            content: `Return only JSON matching the schema. Title must be concise (2-6 words), never the whole input. Remove filler words.\n\n${getCurrentDateContext()}\n\nDATE/TIME RULES: "today"=today, "tomorrow"=tomorrow, "next Monday"=next occurrence; if no time, default 09:00; always ISO UTC.`
           },
           { role: 'user', content: input }
         ],
-        max_completion_tokens: 500,
+        max_completion_tokens: 200,
       }),
     });
 

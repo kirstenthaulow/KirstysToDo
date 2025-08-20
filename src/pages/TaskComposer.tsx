@@ -86,7 +86,7 @@ const TaskComposer = () => {
       }
       
       if (data.priority && ['low', 'medium', 'high', 'urgent'].includes(data.priority)) {
-        setPriority(data.priority);
+        setPriority(data.priority === 'urgent' ? 'high' : data.priority);
       }
       
       if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
