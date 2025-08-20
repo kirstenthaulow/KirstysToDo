@@ -103,7 +103,7 @@ export const TaskList = ({ filter, searchQuery, workspaceFilter, folderFilter, s
     if (!user) return;
 
     const channel = supabase
-      .channel('task-changes')
+      .channel('user-task-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` },
         () => fetchTasks()

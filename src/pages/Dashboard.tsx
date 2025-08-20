@@ -68,7 +68,7 @@ const WorkspaceCard = ({ workspace, onNavigate }: WorkspaceCardProps) => {
     if (!user) return;
 
     const channel = supabase
-      .channel(`workspace-${workspace.id}-task-changes`)
+      .channel('user-task-changes')
       .on(
         'postgres_changes',
         {
@@ -347,7 +347,7 @@ const Dashboard = () => {
     if (!user) return;
 
     const channel = supabase
-      .channel('task-count-changes')
+      .channel('user-task-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` },
         () => {
